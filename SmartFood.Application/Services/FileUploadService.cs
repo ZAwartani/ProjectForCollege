@@ -1,5 +1,4 @@
-﻿using SmartFood.Application.Concrete.Factories;
-using SmartFood.Application.DTOs;
+﻿using SmartFood.Application.DTOs;
 using SmartFood.Application.Interfaces;
 using SmartFood.Application.Interfaces.Factory;
 using SmartFood.Application.Interfaces.Specification;
@@ -25,7 +24,7 @@ namespace SmartFood.Application.Services
             IGenericRepository<VerificationDocument, int> repoFile,
             IGenericRepository<Organization, int> repoOrganization,
             IGenericRepository<Restaurant, int> repoRestaurant,
-            SpeificationBuilderFactory factory, ICurrentUser currentUser)
+            ISpecificationBuilderFactory factory, ICurrentUser currentUser)
         {
             _FileStorage = fileStorage;
             _RepoFile = repoFile;

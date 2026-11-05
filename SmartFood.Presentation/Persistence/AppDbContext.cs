@@ -64,15 +64,43 @@ namespace SmartFood.Presentation.Persistence
             // Restaurant role
             modelBuilder.Entity<Restaurant>()
                 .HasOne(r => r.Role)
-                .WithMany()
+                .WithMany(r => r.Restaurants)
                 .HasForeignKey(r => r.RoleId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Organization role
             modelBuilder.Entity<Organization>()
                 .HasOne(o => o.Role)
-                .WithMany()
+                .WithMany(r => r.Organizations)
                 .HasForeignKey(o => o.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Organization's selected verification document
+            modelBuilder.Entity<Organization>()
+                .HasOne(o => o.VerificationDocument)
+                .WithMany()
+                .HasForeignKey(o => o.VerificationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Restaurant's selected verification document
+            modelBuilder.Entity<Restaurant>()
+                .HasOne(r => r.VerificationDocument)
+                .WithMany()
+                .HasForeignKey(r => r.VerificationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Document's organization owner
+            modelBuilder.Entity<VerificationDocument>()
+                .HasOne(d => d.Organization)
+                .WithMany()
+                .HasForeignKey(d => d.OrgnizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Document's restaurant owner
+            modelBuilder.Entity<VerificationDocument>()
+                .HasOne(d => d.Restaurant)
+                .WithMany()
+                .HasForeignKey(d => d.RestaurantId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }
