@@ -8,18 +8,20 @@ namespace SmartFood.Core.Entity
     {
         [Key]
         public int Id { get; set; }
+
+        [ForeignKey(nameof(Organization))]
+        public int? OrgnizationId { get; set; }
+        public Organization Organization { get; set; }
+
+        [ForeignKey(nameof(Restaurant))]
+        public int? RestaurantId { get; set; }
+        public Restaurant Restaurant{ get; set; }
         public string FilePath { get; set; } = null!;
-        public string FileName { get; set; } = null!;
-        public DateTime UploadedAt { get; set; }
-        public DateTime? ReviewedAt { get; set; }
-        public ICollection<Restaurant> Restaurants { get; set; }
-        public ICollection<Organization> Organizations { get; set; }
-        public VerificationDocument(string filePath, string fileName, DateTime? reviewedAt)
+        public VerificationDocument(string filePath,int? OrganizationId , int? RestaurantId)
         {
             FilePath = filePath;
-            FileName = fileName;
-            UploadedAt = DateTime.UtcNow;
-            ReviewedAt = reviewedAt;
+            this.RestaurantId = RestaurantId;
+            this.OrgnizationId = OrganizationId;
         }
     }
 }

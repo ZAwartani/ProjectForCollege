@@ -7,13 +7,11 @@ namespace SmartFood.Core.Entity
 {
     public class Restaurant : IEntity<int>
     {
-        
-
             [Key]
             public int Id { get; set; }
 
             [ForeignKey(nameof(VerificationDocument))]
-            public int IdVerification { get; set; }
+            public int? VerificationId { get; set; }
             public VerificationDocument VerificationDocument { get; set; }
             public string Email { get; set; }
             public string PasswordHash { get; set; }
@@ -34,7 +32,7 @@ namespace SmartFood.Core.Entity
                 string businessRegistrationNumber, 
                 string address)
             {
-                IdVerification = idVerification;
+                VerificationId = idVerification;
                 Email = email;
                 PasswordHash = passwordHash;
                 RestaurantName = restaurantName;
