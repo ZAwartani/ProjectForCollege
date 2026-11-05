@@ -289,36 +289,77 @@ namespace SmartFood.Application.Services
             string email,
             string otp)
         {
+            var orgnaization = await _RepoOrganization.GetAsync(
+            _Factory
+            .CreateBuilder<Organization>()
+            .AddCriteria(r => r.Email == email));
+
+            if (orgnaization == null)
+                throw new Exception("Restaurant not found");
+
+            string codeOTPToEmail =
+                RandomNumberGenerator.GetInt32(10000, 99999).ToString();
+
             var message = new MimeMessage();
 
-            message.From.Add(new MailboxAddress(
-                "SmartFood",
-                _Configuration["EmailSettings:Email"]));
+            message.From.Add(
+                new MailboxAddress(
+                    "SmartFood",
+                    "fastfoodunizu@gmail.com"));
 
-            message.To.Add(MailboxAddress.Parse(email));
+            message.To.Add(new MailboxAddress(
+                "Restaurant",
+                    email));
 
-            message.Subject = "SmartFood Verification Code";
+            message.Subject =
+                "SmartFood Website Send To You Code";
 
             message.Body = new TextPart("plain")
             {
-                Text = $"Your verification code is {otp}. " +
-                       "It expires in 5 minutes."
+                Text =
+                    $"This is your verification code: {codeOTPToEmail}. It will expire in 5 minutes."
             };
 
-            using var smtp = new SmtpClient();
+            await _CodeRepo.RemoveRangeAsync(
+                await _CodeRepo.ListAsync(
+                    _Factory
+                        .CreateBuilder<CodeOTP>()
+                        .AddCriteria(c => c.IdRestaurant == orgnaization.Id)));
 
-            await smtp.ConnectAsync(
-                _Configuration["EmailSettings:Host"],
-                int.Parse(_Configuration["EmailSettings:Port"]!),
-                MailKit.Security.SecureSocketOptions.StartTls);
+            var newOtp = new CodeOTP(
+                null,
+                orgnaization.Id,
+                codeOTPToEmail,
+                DateTime.UtcNow.AddMinutes(5));
 
-            await smtp.AuthenticateAsync(
-                _Configuration["EmailSettings:Email"],
-                _Configuration["EmailSettings:Password"]);
+            await _CodeRepo.AddAsync(newOtp);
 
-            await smtp.SendAsync(message);
+            using var client = new SmtpClient();
 
-            await smtp.DisconnectAsync(true);
+            try
+            {
+                await client.ConnectAsync(
+                    "smtp.gmail.com",
+                    587,
+                    MailKit.Security.SecureSocketOptions.StartTls);
+
+                await client.AuthenticateAsync(
+                    "fastfoodunizu@gmail.com",
+                    "uleqvzpsjurmiuvx");
+
+                await client.SendAsync(message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(
+                    $"Error sending email: {ex.Message}");
+
+                throw;
+            }
+            finally
+            {
+                await client.DisconnectAsync(true);
+            }
         }
     }
 }

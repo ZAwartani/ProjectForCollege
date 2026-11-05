@@ -201,7 +201,7 @@ namespace SmartFood.Application.Services
             message.From.Add(
                 new MailboxAddress(
                     "SmartFood",
-                    "zakaryawork005@gmail.com"));
+                    "fastfoodunizu@gmail.com"));
 
             message.To.Add(new MailboxAddress(
                 "Restaurant",
@@ -240,8 +240,8 @@ namespace SmartFood.Application.Services
                     MailKit.Security.SecureSocketOptions.StartTls);
 
                 await client.AuthenticateAsync(
-                    "zakaryawork005@gmail.com",
-                    "YOUR_GMAIL_APP_PASSWORD");
+                    "fastfoodunizu@gmail.com",
+                    "uleqvzpsjurmiuvx");
 
                 await client.SendAsync(message);
             }
