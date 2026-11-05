@@ -9,8 +9,13 @@ namespace SmartFood.Core.Entity
     {
         [Key]
         public int Id { get; set; }
+
+        [ForeignKey(nameof(Role))]
+        public int RoleId { get; set; }
+        public Role Role { get; set; }
+
         [ForeignKey(nameof(VerificationDocument))]
-        public int VerificationDocId { get; set; }
+        public int? VerificationId { get; set; }
         public VerificationDocument VerificationDocument { get; set; }
         public string OrganizationName { get; set; } = null!;
         public string Email { get; set; }
@@ -18,20 +23,24 @@ namespace SmartFood.Core.Entity
         public string OwnerName { get; set; } = null!;
         public string RegistrationNumber { get; set; } = null!;
         public string Address { get; set; } = null!;
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+
         public RegisterStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public ICollection<Tokens> Tokens { get; set; }
         public ICollection<CodeOTP> CodeOTPs { get; set; }
 
-        public Organization(int verificationDocId,
+        public Organization(int? verificationDocId,
             string organizationName,
             string email,
             string passwordHash,
             string ownerName,
             string registrationNumber,
-            string address)
+            string address
+            )
         {
-            VerificationDocId = verificationDocId;
+            VerificationId = verificationDocId;
             OrganizationName = organizationName;
             Email = email;
             PasswordHash = passwordHash;
@@ -40,6 +49,7 @@ namespace SmartFood.Core.Entity
             Address = address;
             Status = RegisterStatus.Pending;
             CreatedAt = DateTime.UtcNow;
+            RoleId = (int)UserType.Organization;
         }
     }
 }
