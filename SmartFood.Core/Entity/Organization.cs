@@ -33,8 +33,6 @@ namespace SmartFood.Core.Entity
         [ForeignKey(nameof(Role))]
         public int RoleId { get; set; }
         public Role Role { get; set; }
-
-        [ForeignKey(nameof(VerificationDocument))]
         public int? VerificationId { get; set; }
         public VerificationDocument VerificationDocument { get; set; }
         public string OrganizationName { get; set; } = null!;
@@ -45,7 +43,6 @@ namespace SmartFood.Core.Entity
         public string Address { get; set; } = null!;
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
-
         public RegisterStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public ICollection<Tokens> Tokens { get; set; }

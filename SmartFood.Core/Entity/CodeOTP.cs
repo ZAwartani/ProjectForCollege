@@ -11,20 +11,16 @@ namespace SmartFood.Core.Entity
     {
         [Key]
         public int Id { get; set; }
-
-        [ForeignKey(nameof(Organization))]
-        public int? IdOrganization { get; set; }
+        public int? OrganizationId { get; set; }
         public Organization Organization { get; set; }
-
-        [ForeignKey(nameof(Restaurant))]
-        public int? IdRestaurant { get; set; }
+        public int? RestaurantId { get; set; }
         public Restaurant Restaurant { get; set; }
         public string Code { get; set; }
         public DateTime? CodeExpirDate { get; set; }
-        public CodeOTP(int? idOrganization, int? idRestaurant, string code, DateTime? codeExpirDate)
+        public CodeOTP(int? OrganizationId, int? RestaurantId, string code, DateTime? codeExpirDate)
         {
-            IdOrganization = idOrganization;
-            IdRestaurant = idRestaurant;
+            this.OrganizationId = OrganizationId;
+            this.RestaurantId = RestaurantId;
             Code = code;
             CodeExpirDate = codeExpirDate;
         }

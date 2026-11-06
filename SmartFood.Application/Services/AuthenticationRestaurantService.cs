@@ -71,7 +71,7 @@ namespace SmartFood.Application.Services
 
             var otp = await _CodeRepo.GetAsync(
                 _Factory.CreateBuilder<CodeOTP>()
-                    .AddCriteria(c => c.IdRestaurant == restaurant.Id)
+                    .AddCriteria(c => c.RestaurantId == restaurant.Id)
                     .AddCriteria(c => c.Code == dto.OTP));
 
             if (otp == null)
@@ -121,7 +121,7 @@ namespace SmartFood.Application.Services
 
             var otp = await _CodeRepo.GetAsync(
                 _Factory.CreateBuilder<CodeOTP>()
-                    .AddCriteria(c => c.IdRestaurant == restaurant.Id)
+                    .AddCriteria(c => c.RestaurantId == restaurant.Id)
                     .AddCriteria(c => c.Code == dto.OTP));
 
             if (otp == null)
@@ -146,7 +146,7 @@ namespace SmartFood.Application.Services
 
             var token = await _TokenRepo.GetAsync(
                 _Factory.CreateBuilder<Tokens>()
-                    .AddCriteria(t => t.IdRestaurant == restaurant.Id)
+                    .AddCriteria(t => t.RestaurantId == restaurant.Id)
                     .AddCriteria(t => t.RefreshToken == dto.RefreshToken)
                     .AddCriteria(t => !t.RefreshTokenRevokedAt.HasValue));
 
@@ -221,7 +221,7 @@ namespace SmartFood.Application.Services
                 await _CodeRepo.ListAsync(
                     _Factory
                         .CreateBuilder<CodeOTP>()
-                        .AddCriteria(c => c.IdRestaurant == restaurant.Id)));
+                        .AddCriteria(c => c.RestaurantId == restaurant.Id)));
 
             var newOtp = new CodeOTP(
                 null,

@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Identity\**" />
+    <Content Remove="Identity\**" />
+    <EmbeddedResource Remove="Identity\**" />
+    <None Remove="Identity\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.11" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
@@ -26,10 +33,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SmartFood.Application\SmartFood.Application.csproj" />
+    <ProjectReference Include="..\SmartFood.Core\SmartFood.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Identity\" />
+    <Folder Include="Migrations\" />
+    <Folder Include="Persistence\" />
     <Folder Include="wwwroot\" />
   </ItemGroup>
 

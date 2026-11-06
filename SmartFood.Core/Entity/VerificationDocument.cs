@@ -8,12 +8,8 @@ namespace SmartFood.Core.Entity
     {
         [Key]
         public int Id { get; set; }
-
-        [ForeignKey(nameof(Organization))]
         public int? OrgnizationId { get; set; }
         public Organization Organization { get; set; }
-
-        [ForeignKey(nameof(Restaurant))]
         public int? RestaurantId { get; set; }
         public Restaurant Restaurant { get; set; }
         public string FilePath { get; set; } = null!;

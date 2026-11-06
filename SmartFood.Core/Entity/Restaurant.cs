@@ -10,12 +10,10 @@ namespace SmartFood.Core.Entity
         [Key]
         public int Id { get; set; }
 
-        [ForeignKey(nameof(Role))]
         public int RoleId { get; set; }
 
         public Role Role { get; set; }
 
-        [ForeignKey(nameof(VerificationDocument))]
         public int? VerificationId { get; set; }
         public VerificationDocument VerificationDocument { get; set; }
         public string Email { get; set; }

@@ -27,12 +27,10 @@ namespace SmartFood.Presentation.Persistence
         {
             base.OnModelCreating(modelBuilder);
 
-            // Fixed role IDs
             modelBuilder.Entity<Role>()
                 .Property(r => r.Id)
                 .ValueGeneratedNever();
 
-            // Role seed data
             modelBuilder.Entity<Role>()
                 .HasData(
                     new Role
@@ -52,34 +50,31 @@ namespace SmartFood.Presentation.Persistence
                     }
                 );
 
-            // Unique emails
             modelBuilder.Entity<Restaurant>()
                 .HasIndex(r => r.Email)
                 .IsUnique();
-
-            modelBuilder.Entity<VerificationDocument>()
-                .HasIndex(x => x.OrgnizationId);
-
-            modelBuilder.Entity<VerificationDocument>()
-                .HasIndex(x => x.RestaurantId);
 
             modelBuilder.Entity<Organization>()
                 .HasIndex(o => o.Email)
                 .IsUnique();
 
-            modelBuilder.Entity<CodeOTP>()
-                .HasIndex(x => x.IdOrganization);
-
-            modelBuilder.Entity<CodeOTP>()
-                .HasIndex(x => x.IdRestaurant);
-
-
-
             modelBuilder.Entity<Tokens>()
-                .HasIndex(x => x.IdOrganization);
+                .HasOne(t => t.Organization)
+                .WithMany(o => o.Tokens)
+                .HasForeignKey(t => t.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Tokens>()
-                .HasIndex(x => x.IdRestaurant);
+            modelBuilder.Entity<CodeOTP>()
+                .HasOne(r => r.Organization)
+                .WithMany(o => o.CodeOTPs)
+                .HasForeignKey(r => r.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CodeOTP>()
+                .HasOne(r => r.Restaurant)
+                .WithMany(o => o.CodeOTPs)
+                .HasForeignKey(r => r.RestaurantId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Restaurant role
             modelBuilder.Entity<Restaurant>()
@@ -100,28 +95,34 @@ namespace SmartFood.Presentation.Persistence
                 .HasOne(o => o.VerificationDocument)
                 .WithMany()
                 .HasForeignKey(o => o.VerificationId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Restaurant's selected verification document
             modelBuilder.Entity<Restaurant>()
                 .HasOne(r => r.VerificationDocument)
                 .WithMany()
                 .HasForeignKey(r => r.VerificationId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Document's organization owner
             modelBuilder.Entity<VerificationDocument>()
                 .HasOne(d => d.Organization)
                 .WithMany()
                 .HasForeignKey(d => d.OrgnizationId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Document's restaurant owner
             modelBuilder.Entity<VerificationDocument>()
                 .HasOne(d => d.Restaurant)
                 .WithMany()
                 .HasForeignKey(d => d.RestaurantId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<VerificationDocument>()
+                .HasIndex(x => x.OrgnizationId);
+
+            modelBuilder.Entity<VerificationDocument>()
+                .HasIndex(x => x.RestaurantId);
         }
     }
 }

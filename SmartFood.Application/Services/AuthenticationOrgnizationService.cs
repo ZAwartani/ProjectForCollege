@@ -114,7 +114,7 @@ namespace SmartFood.Application.Services
             var code = await _CodeRepo.GetAsync(
                 _Factory.CreateBuilder<CodeOTP>()
                     .AddCriteria(x =>
-                        x.IdOrganization == organization.Id &&
+                        x.OrganizationId == organization.Id &&
                         x.Code == dto.CodeOTP));
 
             if (code == null)
@@ -147,7 +147,7 @@ namespace SmartFood.Application.Services
             var storedToken = await _TokenRepo.GetAsync(
                 _Factory.CreateBuilder<Tokens>()
                     .AddCriteria(x =>
-                        x.IdOrganization == organization.Id &&
+                        x.OrganizationId == organization.Id &&
                         x.RefreshToken == dto.RefreshToken));
 
             if (storedToken == null)
@@ -181,7 +181,7 @@ namespace SmartFood.Application.Services
             var token = await _TokenRepo.GetAsync(
                 _Factory.CreateBuilder<Tokens>()
                     .AddCriteria(x =>
-                        x.IdOrganization == organization.Id &&
+                        x.OrganizationId == organization.Id &&
                         x.RefreshToken == dto.RefreshToken));
 
             if (token == null)
@@ -210,7 +210,7 @@ namespace SmartFood.Application.Services
             var code = await _CodeRepo.GetAsync(
                 _Factory.CreateBuilder<CodeOTP>()
                     .AddCriteria(x =>
-                        x.IdOrganization == organization.Id &&
+                        x.OrganizationId == organization.Id &&
                         x.Code == dto.OTP));
 
             if (code == null)
@@ -327,7 +327,7 @@ namespace SmartFood.Application.Services
                 await _CodeRepo.ListAsync(
                     _Factory
                         .CreateBuilder<CodeOTP>()
-                        .AddCriteria(c => c.IdRestaurant == orgnaization.Id)));
+                        .AddCriteria(c => c.RestaurantId == orgnaization.Id)));
 
             var newOtp = new CodeOTP(
                 null,
