@@ -130,9 +130,7 @@ namespace SmartFood.Application.Services
         }
 
         // REFRESH TOKEN
-        public async Task<RestaurantTokenResponceDto>
-            OrganizationRefreshTokenAsync(
-                OrganizationRefreshTokenDto dto)
+        public async Task<RestaurantTokenResponceDto>OrganizationRefreshTokenAsync(OrganizationRefreshTokenDto dto)
         {
             var organization = await _RepoOrganization.GetAsync(
                 _Factory.CreateBuilder<Organization>()
