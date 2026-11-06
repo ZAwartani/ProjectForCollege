@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using MailKit.Net.Smtp;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MimeKit;
 using SmartFood.Application.DTOs;
@@ -7,11 +8,9 @@ using SmartFood.Application.Interfaces.Factory;
 using SmartFood.Application.Interfaces.Specification;
 using SmartFood.Core.Entity;
 using System.IdentityModel.Tokens.Jwt;
-using MailKit.Net.Smtp;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using System.Net.WebSockets;
 
 namespace SmartFood.Application.Services
 {
@@ -53,7 +52,9 @@ namespace SmartFood.Application.Services
                 dto.RestaurantName,
                 dto.OwnerName,
                 dto.BusinessRegistrationNumber,
-                dto.Address);
+                dto.Address,
+                null,
+                null);
 
             await _RepoRestaurant.AddAsync(restaurant);
         }

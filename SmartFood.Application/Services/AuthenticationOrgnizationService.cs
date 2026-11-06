@@ -56,7 +56,10 @@ namespace SmartFood.Application.Services
                 BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 dto.OwnerName,
                 dto.RegistrationNumber,
-                dto.Address);
+                dto.Address,
+                null,
+                null
+                );
 
             await _RepoOrganization.AddAsync(organization);
         }

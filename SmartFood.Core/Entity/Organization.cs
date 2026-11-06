@@ -7,6 +7,26 @@ namespace SmartFood.Core.Entity
 {
     public class Organization : IEntity<int>
     {
+        public Organization(
+            int? verificationId,
+            string organizationName, string email, string passwordHash,
+            string ownerName, string registrationNumber, string address,
+            double? latitude, double? longitude
+           )
+        {
+            VerificationId = verificationId;
+            OrganizationName = organizationName;
+            Email = email;
+            PasswordHash = passwordHash;
+            OwnerName = ownerName;
+            RegistrationNumber = registrationNumber;
+            Address = address;
+            Latitude = latitude;
+            Longitude = longitude;
+            Status = RegisterStatus.Pending;
+            CreatedAt = DateTime.UtcNow;
+        }
+
         [Key]
         public int Id { get; set; }
 
@@ -31,25 +51,7 @@ namespace SmartFood.Core.Entity
         public ICollection<Tokens> Tokens { get; set; }
         public ICollection<CodeOTP> CodeOTPs { get; set; }
 
-        public Organization(int? verificationDocId,
-            string organizationName,
-            string email,
-            string passwordHash,
-            string ownerName,
-            string registrationNumber,
-            string address
-            )
-        {
-            VerificationId = verificationDocId;
-            OrganizationName = organizationName;
-            Email = email;
-            PasswordHash = passwordHash;
-            OwnerName = ownerName;
-            RegistrationNumber = registrationNumber;
-            Address = address;
-            Status = RegisterStatus.Pending;
-            CreatedAt = DateTime.UtcNow;
-            RoleId = (int)UserType.Organization;
-        }
+
+
     }
 }

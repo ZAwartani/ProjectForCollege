@@ -15,13 +15,13 @@ namespace SmartFood.Core.Entity
 
         [ForeignKey(nameof(Restaurant))]
         public int? RestaurantId { get; set; }
-        public Restaurant Restaurant{ get; set; }
+        public Restaurant Restaurant { get; set; }
         public string FilePath { get; set; } = null!;
-        public VerificationDocument(string filePath,int? OrganizationId , int? RestaurantId)
+        public VerificationDocument(int? OrgnizationId, int? RestaurantId, string filePath)
         {
             FilePath = filePath;
             this.RestaurantId = RestaurantId;
-            this.OrgnizationId = OrganizationId;
+            this.OrgnizationId = OrgnizationId;
         }
     }
 }

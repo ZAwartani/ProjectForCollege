@@ -32,15 +32,18 @@ namespace SmartFood.Core.Entity
         public ICollection<CodeOTP> CodeOTPs { get; set; }
 
         public Restaurant(
-                int idVerification,
+                int? VerificationId,
                 string email,
                 string passwordHash,
                 string restaurantName,
                 string ownerName,
                 string businessRegistrationNumber,
-                string address)
+                string address,
+                double? Longitude,
+                double? Latitude
+            )
         {
-            VerificationId = idVerification;
+            this.VerificationId = VerificationId;
             Email = email;
             PasswordHash = passwordHash;
             RestaurantName = restaurantName;
@@ -50,6 +53,8 @@ namespace SmartFood.Core.Entity
             Status = RegisterStatus.Pending;
             CreatedAt = DateTime.UtcNow;
             RoleId = (int)UserType.Restaurant;
+            this.Longitude = Longitude;
+            this.Latitude = Latitude;
         }
     }
 }

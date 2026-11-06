@@ -66,6 +66,32 @@ namespace SmartFood.Application.Services
                 );
             }
 
+            // Clear the owner's reference to this document
+            if (_CurrentUser.IsInRole("Restaurant"))
+            {
+                var restaurant = await _RepoRestaurant.GetByIdAsync(userId);
+
+                if (restaurant != null &&
+                    restaurant.VerificationId == document.Id)
+                {
+                    restaurant.VerificationId = null;
+
+                    await _RepoRestaurant.UpdateAsync(restaurant);
+                }
+            }
+            else if (_CurrentUser.IsInRole("Organization"))
+            {
+                var organization = await _RepoOrganization.GetByIdAsync(userId);
+
+                if (organization != null &&
+                    organization.VerificationId == document.Id)
+                {
+                    organization.VerificationId = null;
+
+                    await _RepoOrganization.UpdateAsync(organization);
+                }
+            }
+
             var fileDeleted = await _FileStorage.DeleteFileAsync(
                 document.FilePath
                 );
@@ -82,36 +108,43 @@ namespace SmartFood.Application.Services
 
         }
 
-        public Task<IReadOnlyList<FileClient>> GetByOrgnizationIdAsync(int OrgnaizationId)
+        public async Task<IReadOnlyList<FileClient>>
+    GetByOrgnizationIdAsync(int OrgnaizationId)
         {
-            throw new NotImplementedException();
+            var spec = _Factory.CreateBuilder<VerificationDocument>()
+                .AddCriteria(d => d.OrgnizationId == OrgnaizationId);
+
+            var documents = await _RepoFile.ListAsync(spec);
+
+            return documents.Select(d => new FileClient(
+                d.Id,
+                d.FilePath
+            )).ToList();
         }
 
-        public Task<IReadOnlyList<FileClient>> GetByRestaurantIdAsync(int RestaurantId)
+        public async Task<IReadOnlyList<FileClient>>
+    GetByRestaurantIdAsync(int RestaurantId)
         {
-            throw new NotImplementedException();
+            var spec = _Factory.CreateBuilder<VerificationDocument>()
+                .AddCriteria(d => d.RestaurantId == RestaurantId);
+
+            var documents = await _RepoFile.ListAsync(spec);
+
+            return documents.Select(d => new FileClient(
+                d.Id,
+                d.FilePath
+            )).ToList();
         }
 
         public Task<IReadOnlyList<string>> ListAsync()
         {
-            throw new NotImplementedException();
+            return _FileStorage.ListFilesAsync();
         }
 
-        public async Task<bool> UploadFileDocumenationOrganizationAsync(UploadFile dto)
+        public async Task<bool> UploadFileDocumenationOrganizationAsync(
+     UploadFile dto)
         {
-            // Save the actual file on disk
-            var fileName = await _FileStorage.SaveFileAsync(dto.File);
-
-            // Create the database entity
-            var document = new VerificationDocument(
-                fileName,
-                userId,
-                null
-            );
-
-            // Save the document information in the database
-            await _RepoFile.AddAsync(document);
-
+            // Find the current organization first
             var organization = _Factory.CreateBuilder<Organization>()
                 .AddCriteria(x => x.Id == userId);
 
@@ -122,29 +155,30 @@ namespace SmartFood.Application.Services
                 return false;
             }
 
+            // Save the actual file on disk
+            var fileName = await _FileStorage.SaveFileAsync(dto.File);
+
+            // Save the document information in the database
+            var document = new VerificationDocument(
+                userId,
+                null,
+                fileName
+            );
+
+            await _RepoFile.AddAsync(document);
+
+            // Link the organization to its selected document
             result.VerificationId = document.Id;
 
             await _RepoOrganization.UpdateAsync(result);
 
-
             return true;
         }
 
-        public async Task<bool> UploadFileDocumenationRestaurantAsync(UploadFile dto)
+        public async Task<bool> UploadFileDocumenationRestaurantAsync(
+            UploadFile dto)
         {
-            // Save the actual file on disk
-            var fileName = await _FileStorage.SaveFileAsync(dto.File);
-
-            // Create the database entity
-            var document = new VerificationDocument(
-                fileName,
-                null,
-                userId
-            );
-
-            // Save the document information in the database
-            await _RepoFile.AddAsync(document);
-
+            // Find the current restaurant first
             var restaurant = _Factory.CreateBuilder<Restaurant>()
                 .AddCriteria(x => x.Id == userId);
 
@@ -155,6 +189,19 @@ namespace SmartFood.Application.Services
                 return false;
             }
 
+            // Save the actual file on disk
+            var fileName = await _FileStorage.SaveFileAsync(dto.File);
+
+            // Save the document information in the database
+            var document = new VerificationDocument(
+                null,
+                userId,
+                fileName
+            );
+
+            await _RepoFile.AddAsync(document);
+
+            // Link the restaurant to its selected document
             result.VerificationId = document.Id;
 
             await _RepoRestaurant.UpdateAsync(result);

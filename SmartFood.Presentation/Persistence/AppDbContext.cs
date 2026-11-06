@@ -57,9 +57,29 @@ namespace SmartFood.Presentation.Persistence
                 .HasIndex(r => r.Email)
                 .IsUnique();
 
+            modelBuilder.Entity<VerificationDocument>()
+                .HasIndex(x => x.OrgnizationId);
+
+            modelBuilder.Entity<VerificationDocument>()
+                .HasIndex(x => x.RestaurantId);
+
             modelBuilder.Entity<Organization>()
                 .HasIndex(o => o.Email)
                 .IsUnique();
+
+            modelBuilder.Entity<CodeOTP>()
+                .HasIndex(x => x.IdOrganization);
+
+            modelBuilder.Entity<CodeOTP>()
+                .HasIndex(x => x.IdRestaurant);
+
+
+
+            modelBuilder.Entity<Tokens>()
+                .HasIndex(x => x.IdOrganization);
+
+            modelBuilder.Entity<Tokens>()
+                .HasIndex(x => x.IdRestaurant);
 
             // Restaurant role
             modelBuilder.Entity<Restaurant>()
@@ -80,14 +100,14 @@ namespace SmartFood.Presentation.Persistence
                 .HasOne(o => o.VerificationDocument)
                 .WithMany()
                 .HasForeignKey(o => o.VerificationId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Restaurant's selected verification document
             modelBuilder.Entity<Restaurant>()
                 .HasOne(r => r.VerificationDocument)
                 .WithMany()
                 .HasForeignKey(r => r.VerificationId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Document's organization owner
             modelBuilder.Entity<VerificationDocument>()
