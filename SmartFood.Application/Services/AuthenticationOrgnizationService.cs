@@ -50,7 +50,7 @@ namespace SmartFood.Application.Services
                 throw new Exception("Email already exists.");
 
             var organization = new Organization(
-                dto.VerificationDocumentId,
+                null,
                 dto.OrganizationName,
                 dto.Email,
                 BCrypt.Net.BCrypt.HashPassword(dto.Password),

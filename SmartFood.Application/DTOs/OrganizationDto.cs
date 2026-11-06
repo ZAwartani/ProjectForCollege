@@ -1,7 +1,6 @@
 ﻿namespace SmartFood.Application.DTOs
 {
     public record OrganizationRegisterDto(
-            int VerificationDocumentId,
             string Email,
             string Password,
             string OrganizationName,

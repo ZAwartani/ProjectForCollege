@@ -46,7 +46,7 @@ namespace SmartFood.Application.Services
                 throw new Exception("Email already exists");
 
             var restaurant = new Restaurant(
-                dto.VerificationDocumentId,
+                null,
                 dto.Email,
                 BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 dto.RestaurantName,
