@@ -16,30 +16,45 @@ namespace SmartFood.Presentation.Controllers
             _organizationService = organizationService;
         }
 
-        // Register
-        [HttpPost("organization/register")]
+        // ==========================================
+        // REGISTER ORGANIZATION
+        // ==========================================
+
+        [HttpPost("register")]
         public async Task<IActionResult> RegisterOrganization(
-            OrganizationRegisterDto dto)
+            [FromBody] OrganizationRegisterDto dto)
         {
             await _organizationService.RegisterNewOrgnaizationAsync(dto);
 
-            return Ok("Organization registered successfully.");
+            return Ok(new
+            {
+                Message = "Organization registered successfully."
+            });
         }
 
-        // Login and send OTP
-        [HttpPost("organization/login")]
+        // ==========================================
+        // LOGIN: EMAIL + PASSWORD -> SEND OTP
+        // ==========================================
+
+        [HttpPost("login")]
         public async Task<IActionResult> LoginOrganization(
-            OrganizationLoginDto dto)
+            [FromBody] OrganizationLoginDto dto)
         {
             await _organizationService.OrganizationLoginAsync(dto);
 
-            return Ok("Verification code sent to your email.");
+            return Ok(new
+            {
+                Message = "Verification code sent to your email."
+            });
         }
 
-        // Verify OTP and return tokens
-        [HttpPost("organization/verify-otp")]
+        // ==========================================
+        // VERIFY LOGIN OTP -> GET TOKENS
+        // ==========================================
+
+        [HttpPost("verify-otp")]
         public async Task<IActionResult> VerifyOrganizationOtp(
-            OrganizationVerifyCodeOtp dto)
+            [FromBody] OrganizationVerifyCodeOtp dto)
         {
             var result =
                 await _organizationService.OrganizationVerifyOTPAsync(dto);
@@ -47,10 +62,46 @@ namespace SmartFood.Presentation.Controllers
             return Ok(result);
         }
 
-        // Refresh tokens
-        [HttpPost("organization/refresh-token")]
+        // ==========================================
+        // FORGOT PASSWORD: EMAIL -> SEND OTP
+        // ==========================================
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotOrganizationPassword(
+            [FromBody] OrganizationSendOTPDto dto)
+        {
+            await _organizationService.OrganizationForgotPasswordAsync(dto);
+
+            return Ok(new
+            {
+                Message = "Password reset verification code sent to your email."
+            });
+        }
+
+        // ==========================================
+        // RESET PASSWORD: EMAIL + OTP + NEW PASSWORD
+        // ==========================================
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetOrganizationPassword(
+            [FromBody] OrganizationChangePasswordDto dto)
+        {
+            var result =
+                await _organizationService.OrganizationResetPasswordAsync(dto);
+
+            return Ok(new
+            {
+                Message = result
+            });
+        }
+
+        // ==========================================
+        // REFRESH TOKEN
+        // ==========================================
+
+        [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshOrganizationToken(
-            OrganizationRefreshTokenDto dto)
+            [FromBody] OrganizationRefreshTokenDto dto)
         {
             var result =
                 await _organizationService.OrganizationRefreshTokenAsync(dto);
@@ -58,25 +109,20 @@ namespace SmartFood.Presentation.Controllers
             return Ok(result);
         }
 
-        // Reset password
-        [HttpPost("organization/reset-password")]
-        public async Task<IActionResult> ResetOrganizationPassword(
-            OrganizationChangePasswordDto dto)
-        {
-            var result =
-                await _organizationService.OrganizationChangePasswordAsync(dto);
+        // ==========================================
+        // LOGOUT
+        // ==========================================
 
-            return Ok(result);
-        }
-
-        // Logout
-        [HttpPost("organization/logout")]
+        [HttpPost("logout")]
         public async Task<IActionResult> LogoutOrganization(
-            OrganizationLogoutDto dto)
+            [FromBody] OrganizationLogoutDto dto)
         {
             await _organizationService.OragnizationLogoutAsync(dto);
 
-            return Ok("Logged out successfully.");
+            return Ok(new
+            {
+                Message = "Logged out successfully."
+            });
         }
     }
 }

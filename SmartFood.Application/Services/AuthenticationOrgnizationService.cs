@@ -1,5 +1,4 @@
-﻿
-using MailKit.Net.Smtp;
+﻿using MailKit.Net.Smtp;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MimeKit;
@@ -18,17 +17,26 @@ namespace SmartFood.Application.Services
     public class AuthenticationOrgnizationService
         : IAuthenticationServiceOrganization
     {
-        private readonly IGenericRepository<Organization, int> _RepoOrganization;
-        private readonly IGenericRepository<Tokens, int> _TokenRepo;
-        private readonly IGenericRepository<CodeOTP, int> _CodeRepo;
+        private readonly IGenericRepository<Organization, int>
+            _RepoOrganization;
+
+        private readonly IGenericRepository<Tokens, int>
+            _TokenRepo;
+
+        private readonly IGenericRepository<CodeOTP, int>
+            _CodeRepo;
+
         private readonly ISpecificationBuilderFactory _Factory;
+
         private readonly IConfiguration _Configuration;
+        private readonly ICurrentUser _CurrentUser;
 
         public AuthenticationOrgnizationService(
             IGenericRepository<Organization, int> repoOrganization,
             IGenericRepository<Tokens, int> tokenRepo,
             IGenericRepository<CodeOTP, int> codeRepo,
             ISpecificationBuilderFactory factory,
+            ICurrentUser currentUser,
             IConfiguration configuration)
         {
             _RepoOrganization = repoOrganization;
@@ -36,15 +44,20 @@ namespace SmartFood.Application.Services
             _CodeRepo = codeRepo;
             _Factory = factory;
             _Configuration = configuration;
+            _CurrentUser = currentUser;
         }
+        private readonly string Email;
+        // ==========================================
+        // REGISTER ORGANIZATION
+        // ==========================================
 
-        // REGISTER
         public async Task RegisterNewOrgnaizationAsync(
             OrganizationRegisterDto dto)
         {
-            var existingOrganization = await _RepoOrganization.GetAsync(
-                _Factory.CreateBuilder<Organization>()
-                    .AddCriteria(x => x.Email == dto.Email));
+            var existingOrganization =
+                await _RepoOrganization.GetAsync(
+                    _Factory.CreateBuilder<Organization>()
+                        .AddCriteria(x => x.Email == dto.Email));
 
             if (existingOrganization != null)
                 throw new Exception("Email already exists.");
@@ -59,18 +72,22 @@ namespace SmartFood.Application.Services
                 dto.Address,
                 null,
                 null
-                );
+            );
 
             await _RepoOrganization.AddAsync(organization);
         }
 
+        // ==========================================
         // LOGIN: EMAIL + PASSWORD -> SEND OTP
+        // ==========================================
+
         public async Task OrganizationLoginAsync(
             OrganizationLoginDto dto)
         {
-            var organization = await _RepoOrganization.GetAsync(
-                _Factory.CreateBuilder<Organization>()
-                    .AddCriteria(x => x.Email == dto.Email));
+            var organization =
+                await _RepoOrganization.GetAsync(
+                    _Factory.CreateBuilder<Organization>()
+                        .AddCriteria(x => x.Email == dto.Email));
 
             if (organization == null ||
                 !BCrypt.Net.BCrypt.Verify(
@@ -80,37 +97,64 @@ namespace SmartFood.Application.Services
                 throw new Exception("Invalid email or password.");
             }
 
-            // Generate OTP
-            string otp = RandomNumberGenerator
-                .GetInt32(100000, 1000000).ToString();
+            string otp = GenerateOTP();
 
-            // Save OTP
+            // Delete old OTPs for this organization
+            var oldCodes = await _CodeRepo.ListAsync(
+                _Factory.CreateBuilder<CodeOTP>()
+                    .AddCriteria(x =>
+                        x.OrganizationId == organization.Id));
+
+            if (oldCodes.Any())
+                await _CodeRepo.RemoveRangeAsync(oldCodes);
+
+            // ADDED: Delete all old OTP records globally
+            var allOldCodes = await _CodeRepo.ListAsync(
+                _Factory.CreateBuilder<CodeOTP>()
+            );
+
+            if (allOldCodes.Any())
+                await _CodeRepo.RemoveRangeAsync(allOldCodes);
+
+            // Create new OTP
             var code = new CodeOTP(
                 organization.Id,
                 null,
                 otp,
-                DateTime.UtcNow.AddMinutes(5));
+                DateTime.UtcNow.AddMinutes(5)
+            );
 
             await _CodeRepo.AddAsync(code);
-
-            // Send OTP
-            await SendOtpEmailAsync(organization.Email, otp);
+            try
+            {
+                await SendOtpEmailAsync(
+                    organization.Email,
+                    otp);
+            }
+            catch
+            {
+                await _CodeRepo.DeleteAsync(code.Id);
+                throw;
+            }
+            
         }
 
-        // VERIFY OTP -> GENERATE JWT + REFRESH TOKEN
+        // ==========================================
+        // VERIFY LOGIN OTP -> GENERATE TOKENS
+        // ==========================================
+
         public async Task<RestaurantTokenResponceDto>
             OrganizationVerifyOTPAsync(
                 OrganizationVerifyCodeOtp dto)
         {
-            // Find organization
-            var organization = await _RepoOrganization.GetAsync(
-                _Factory.CreateBuilder<Organization>()
-                    .AddCriteria(x => x.Email == dto.Email));
+            var organization =
+                await _RepoOrganization.GetAsync(
+                    _Factory.CreateBuilder<Organization>()
+                        .AddCriteria(x => x.Email == dto.Email));
 
             if (organization == null)
                 throw new Exception("Organization not found.");
 
-            // Find OTP
             var code = await _CodeRepo.GetAsync(
                 _Factory.CreateBuilder<CodeOTP>()
                     .AddCriteria(x =>
@@ -126,20 +170,123 @@ namespace SmartFood.Application.Services
                 throw new Exception("OTP expired.");
             }
 
-            // OTP is single-use
+            // OTP can only be used once
             await _CodeRepo.DeleteAsync(code.Id);
 
             return await GenerateTokensAsync(organization);
         }
 
+        // ==========================================
+        // FORGOT PASSWORD: EMAIL -> SEND OTP
+        // ==========================================
+
+        public async Task OrganizationForgotPasswordAsync(
+            OrganizationSendOTPDto dto)
+        {
+            var organization =
+                await _RepoOrganization.GetAsync(
+                    _Factory.CreateBuilder<Organization>()
+                        .AddCriteria(x => x.Email == dto.Email));
+
+            if (organization == null)
+                throw new Exception("Organization not found.");
+
+            string otp = GenerateOTP();
+
+            // Delete old OTPs for this organization
+            var oldCodes = await _CodeRepo.ListAsync(
+                _Factory.CreateBuilder<CodeOTP>()
+                    .AddCriteria(x =>
+                        x.OrganizationId == organization.Id));
+
+            if (oldCodes.Any())
+                await _CodeRepo.RemoveRangeAsync(oldCodes);
+
+            // ADDED: Delete all old OTP records globally
+            var allOldCodes = await _CodeRepo.ListAsync(
+                _Factory.CreateBuilder<CodeOTP>()
+            );
+
+            if (allOldCodes.Any())
+                await _CodeRepo.RemoveRangeAsync(allOldCodes);
+
+            // Create new OTP
+            var code = new CodeOTP(
+                organization.Id,
+                null,
+                otp,
+                DateTime.UtcNow.AddMinutes(5)
+            );
+
+            await _CodeRepo.AddAsync(code);
+
+            try
+            {
+                await SendOtpEmailAsync(
+                    organization.Email,
+                    otp);
+            }
+            catch
+            {
+                await _CodeRepo.DeleteAsync(code.Id);
+                throw;
+            }
+        }
+
+        // ==========================================
+        // RESET PASSWORD: EMAIL + OTP + NEW PASSWORD
+        // ==========================================
+
+        public async Task<string?> OrganizationResetPasswordAsync(
+            OrganizationChangePasswordDto dto)
+        {
+            var organization =
+                await _RepoOrganization.GetAsync(
+                    _Factory.CreateBuilder<Organization>()
+                        .AddCriteria(x => x.Email == dto.Email));
+
+            if (organization == null)
+                throw new Exception("Organization not found.");
+
+            var code = await _CodeRepo.GetAsync(
+                _Factory.CreateBuilder<CodeOTP>()
+                    .AddCriteria(x =>
+                        x.OrganizationId == organization.Id &&
+                        x.Code == dto.OTP));
+
+            if (code == null)
+                throw new Exception("Invalid OTP.");
+
+            if (code.CodeExpirDate <= DateTime.UtcNow)
+            {
+                await _CodeRepo.DeleteAsync(code.Id);
+                throw new Exception("OTP expired.");
+            }
+
+            // Consume OTP
+            await _CodeRepo.DeleteAsync(code.Id);
+
+            // Hash new password
+            organization.PasswordHash =
+                BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+            await _RepoOrganization.UpdateAsync(organization);
+
+            return "Password changed successfully.";
+        }
+
+        // ==========================================
         // REFRESH TOKEN
+        // ==========================================
+
         public async Task<RestaurantTokenResponceDto>
             OrganizationRefreshTokenAsync(
                 OrganizationRefreshTokenDto dto)
         {
-            var organization = await _RepoOrganization.GetAsync(
-                _Factory.CreateBuilder<Organization>()
-                    .AddCriteria(x => x.Email == dto.Email));
+            var organization =
+                await _RepoOrganization.GetAsync(
+                    _Factory.CreateBuilder<Organization>()
+                        .AddCriteria(x => x.Email == dto.Email));
 
             if (organization == null)
                 throw new Exception("Organization not found.");
@@ -156,24 +303,30 @@ namespace SmartFood.Application.Services
             if (storedToken.RefreshTokenRevokedAt != null ||
                 storedToken.RefreshTokenExpir <= DateTime.UtcNow)
             {
-                throw new Exception("Refresh token is invalid or expired.");
+                throw new Exception(
+                    "Refresh token is invalid or expired.");
             }
 
-            // Revoke old token
+            // Revoke old refresh token
             storedToken.RefreshTokenRevokedAt = DateTime.UtcNow;
 
             await _TokenRepo.UpdateAsync(storedToken);
 
+            // Generate new token pair
             return await GenerateTokensAsync(organization);
         }
 
+        // ==========================================
         // LOGOUT
+        // ==========================================
+
         public async Task OragnizationLogoutAsync(
             OrganizationLogoutDto dto)
         {
-            var organization = await _RepoOrganization.GetAsync(
-                _Factory.CreateBuilder<Organization>()
-                    .AddCriteria(x => x.Email == dto.Email));
+            var organization =
+                await _RepoOrganization.GetAsync(
+                    _Factory.CreateBuilder<Organization>()
+                        .AddCriteria(x => x.Email == dto.Email));
 
             if (organization == null)
                 throw new Exception("Organization not found.");
@@ -195,42 +348,9 @@ namespace SmartFood.Application.Services
             await _TokenRepo.UpdateAsync(token);
         }
 
-        // CHANGE PASSWORD USING OTP
-        public async Task<string?>
-            OrganizationChangePasswordAsync(
-                OrganizationChangePasswordDto dto)
-        {
-            var organization = await _RepoOrganization.GetAsync(
-                _Factory.CreateBuilder<Organization>()
-                    .AddCriteria(x => x.Email == dto.Email));
-
-            if (organization == null)
-                throw new Exception("Organization not found.");
-
-            var code = await _CodeRepo.GetAsync(
-                _Factory.CreateBuilder<CodeOTP>()
-                    .AddCriteria(x =>
-                        x.OrganizationId == organization.Id &&
-                        x.Code == dto.OTP));
-
-            if (code == null)
-                throw new Exception("Invalid OTP.");
-
-            if (code.CodeExpirDate <= DateTime.UtcNow)
-            {
-                await _CodeRepo.DeleteAsync(code.Id);
-                throw new Exception("OTP expired.");
-            }
-
-            await _CodeRepo.DeleteAsync(code.Id);
-
-            organization.PasswordHash =
-                BCrypt.Net.BCrypt.HashPassword(dto.Password);
-
-            await _RepoOrganization.UpdateAsync(organization);
-
-            return "Password changed successfully.";
-        }
+        // ==========================================
+        // GENERATE JWT + REFRESH TOKEN
+        // ==========================================
 
         private async Task<RestaurantTokenResponceDto>
             GenerateTokensAsync(Organization organization)
@@ -265,7 +385,8 @@ namespace SmartFood.Application.Services
                 audience: _Configuration["JWT:Audience"],
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(15),
-                signingCredentials: credentials);
+                signingCredentials: credentials
+            );
 
             string accessToken =
                 new JwtSecurityTokenHandler().WriteToken(jwt);
@@ -279,63 +400,60 @@ namespace SmartFood.Application.Services
                 refreshToken,
                 DateTime.UtcNow.AddDays(7),
                 null
-                );
+            );
 
             await _TokenRepo.AddAsync(tokenEntity);
 
             return new RestaurantTokenResponceDto(
                 accessToken,
-                refreshToken);
+                refreshToken
+            );
         }
+
+        // ==========================================
+        // GENERATE OTP
+        // ==========================================
+
+        private string GenerateOTP()
+        {
+            return RandomNumberGenerator
+                .GetInt32(100000, 1000000)
+                .ToString();
+        }
+
+        // ==========================================
+        // SEND OTP EMAIL
+        // ==========================================
 
         private async Task SendOtpEmailAsync(
             string email,
             string otp)
         {
-            var orgnaization = await _RepoOrganization.GetAsync(
-            _Factory
-            .CreateBuilder<Organization>()
-            .AddCriteria(r => r.Email == email));
+            string senderEmail = "fastfoodunizu@gmail.com";
 
-            if (orgnaization == null)
-                throw new Exception("Restaurant not found");
-
-            string codeOTPToEmail =
-                RandomNumberGenerator.GetInt32(10000, 99999).ToString();
+            // Keep your Gmail App Password here.
+            string appPassword = "uleqvzpsjurmiuvx";
 
             var message = new MimeMessage();
 
             message.From.Add(
                 new MailboxAddress(
                     "SmartFood",
-                    "fastfoodunizu@gmail.com"));
+                    senderEmail));
 
-            message.To.Add(new MailboxAddress(
-                "Restaurant",
+            message.To.Add(
+                new MailboxAddress(
+                    "Organization",
                     email));
 
-            message.Subject =
-                "SmartFood Website Send To You Code";
+            message.Subject = "SmartFood - Verification Code";
 
             message.Body = new TextPart("plain")
             {
                 Text =
-                    $"This is your verification code: {codeOTPToEmail}. It will expire in 5 minutes."
+                    $"Your SmartFood verification code is: {otp}\n\n" +
+                    "This code will expire in 5 minutes."
             };
-
-            await _CodeRepo.RemoveRangeAsync(
-                await _CodeRepo.ListAsync(
-                    _Factory
-                        .CreateBuilder<CodeOTP>()
-                        .AddCriteria(c => c.RestaurantId == orgnaization.Id)));
-
-            var newOtp = new CodeOTP(
-                null,
-                orgnaization.Id,
-                codeOTPToEmail,
-                DateTime.UtcNow.AddMinutes(5));
-
-            await _CodeRepo.AddAsync(newOtp);
 
             using var client = new SmtpClient();
 
@@ -347,21 +465,15 @@ namespace SmartFood.Application.Services
                     MailKit.Security.SecureSocketOptions.StartTls);
 
                 await client.AuthenticateAsync(
-                    "fastfoodunizu@gmail.com",
-                    "uleqvzpsjurmiuvx");
+                    senderEmail,
+                    appPassword);
 
                 await client.SendAsync(message);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(
-                    $"Error sending email: {ex.Message}");
-
-                throw;
-            }
             finally
             {
-                await client.DisconnectAsync(true);
+                if (client.IsConnected)
+                    await client.DisconnectAsync(true);
             }
         }
     }

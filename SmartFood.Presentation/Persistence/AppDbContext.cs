@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿
+using Microsoft.EntityFrameworkCore;
 using SmartFood.Core.Entity;
 using SmartFood.Core.Enums;
 
@@ -12,20 +13,19 @@ namespace SmartFood.Presentation.Persistence
         }
 
         public DbSet<Restaurant> Restaurants { get; set; }
-
         public DbSet<Organization> Organizations { get; set; }
-
         public DbSet<Role> Roles { get; set; }
-
         public DbSet<VerificationDocument> VerificationDocuments { get; set; }
-
         public DbSet<CodeOTP> CodeOTPs { get; set; }
-
         public DbSet<Tokens> Tokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // =========================
+            // ROLE CONFIGURATION
+            // =========================
 
             modelBuilder.Entity<Role>()
                 .Property(r => r.Id)
@@ -50,6 +50,10 @@ namespace SmartFood.Presentation.Persistence
                     }
                 );
 
+            // =========================
+            // UNIQUE EMAILS
+            // =========================
+
             modelBuilder.Entity<Restaurant>()
                 .HasIndex(r => r.Email)
                 .IsUnique();
@@ -58,65 +62,125 @@ namespace SmartFood.Presentation.Persistence
                 .HasIndex(o => o.Email)
                 .IsUnique();
 
+            // =========================
+            // ORGANIZATION TOKENS
+            // =========================
+
             modelBuilder.Entity<Tokens>()
                 .HasOne(t => t.Organization)
                 .WithMany(o => o.Tokens)
                 .HasForeignKey(t => t.OrganizationId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // =========================
+            // OTP RELATIONSHIPS
+            // =========================
+
+            modelBuilder.Entity<CodeOTP>()
+                .HasOne(c => c.Organization)
+                .WithMany(o => o.CodeOTPs)
+                .HasForeignKey(c => c.OrganizationId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<CodeOTP>()
-                .HasOne(r => r.Organization)
-                .WithMany(o => o.CodeOTPs)
-                .HasForeignKey(r => r.OrganizationId)
+                .HasOne(c => c.Restaurant)
+                .WithMany(r => r.CodeOTPs)
+                .HasForeignKey(c => c.RestaurantId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Every OTP must belong to exactly one owner
             modelBuilder.Entity<CodeOTP>()
-                .HasOne(r => r.Restaurant)
-                .WithMany(o => o.CodeOTPs)
-                .HasForeignKey(r => r.RestaurantId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .ToTable(t => t.HasCheckConstraint(
+                    "CK_CodeOTP_Owner",
+                    """
+                    (
+                        RestaurantId IS NOT NULL
+                        AND OrganizationId IS NULL
+                    )
+                    OR
+                    (
+                        RestaurantId IS NULL
+                        AND OrganizationId IS NOT NULL
+                    )
+                    """));
 
-            // Restaurant role
+            // =========================
+            // RESTAURANT ROLE
+            // =========================
+
             modelBuilder.Entity<Restaurant>()
                 .HasOne(r => r.Role)
                 .WithMany(r => r.Restaurants)
                 .HasForeignKey(r => r.RoleId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Organization role
+            // =========================
+            // ORGANIZATION ROLE
+            // =========================
+
             modelBuilder.Entity<Organization>()
                 .HasOne(o => o.Role)
                 .WithMany(r => r.Organizations)
                 .HasForeignKey(o => o.RoleId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Organization's selected verification document
+            // =========================
+            // ORGANIZATION VERIFICATION
+            // =========================
+
             modelBuilder.Entity<Organization>()
                 .HasOne(o => o.VerificationDocument)
                 .WithMany()
                 .HasForeignKey(o => o.VerificationId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Restaurant's selected verification document
+            // =========================
+            // RESTAURANT VERIFICATION
+            // =========================
+
             modelBuilder.Entity<Restaurant>()
                 .HasOne(r => r.VerificationDocument)
                 .WithMany()
                 .HasForeignKey(r => r.VerificationId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Document's organization owner
+            // =========================
+            // VERIFICATION DOCUMENT OWNERS
+            // =========================
+
             modelBuilder.Entity<VerificationDocument>()
                 .HasOne(d => d.Organization)
                 .WithMany()
                 .HasForeignKey(d => d.OrgnizationId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Document's restaurant owner
             modelBuilder.Entity<VerificationDocument>()
                 .HasOne(d => d.Restaurant)
                 .WithMany()
                 .HasForeignKey(d => d.RestaurantId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<VerificationDocument>()
+                .ToTable(t => t.HasCheckConstraint(
+                    "CK_VerificationDocument_Owner",
+                    """
+                    (
+                        OrgnizationId IS NOT NULL
+                        AND RestaurantId IS NULL
+                    )
+                    OR
+                    (
+                        OrgnizationId IS NULL
+                        AND RestaurantId IS NOT NULL
+                    )
+                    """));
 
             modelBuilder.Entity<VerificationDocument>()
                 .HasIndex(x => x.OrgnizationId);

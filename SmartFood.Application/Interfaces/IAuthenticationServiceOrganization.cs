@@ -17,7 +17,10 @@ namespace SmartFood.Application.Interfaces
         Task OragnizationLogoutAsync(
             OrganizationLogoutDto LogoutDto);
 
-        Task<string?> OrganizationChangePasswordAsync(
+        Task OrganizationForgotPasswordAsync(
+            OrganizationSendOTPDto dto);
+
+        Task<string?> OrganizationResetPasswordAsync(
             OrganizationChangePasswordDto dto);
 
         Task<RestaurantTokenResponceDto> OrganizationRefreshTokenAsync(

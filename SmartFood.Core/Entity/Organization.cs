@@ -25,6 +25,7 @@ namespace SmartFood.Core.Entity
             Longitude = longitude;
             Status = RegisterStatus.Pending;
             CreatedAt = DateTime.UtcNow;
+            RoleId = (int)UserType.Organization;
         }
 
         [Key]

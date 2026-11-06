@@ -49,7 +49,10 @@ namespace SmartFood.Presentation.Migrations
 
                     b.HasIndex("RestaurantId");
 
-                    b.ToTable("CodeOTPs");
+                    b.ToTable("CodeOTPs", t =>
+                        {
+                            t.HasCheckConstraint("CK_CodeOTP_Owner", "(\r\n    RestaurantId IS NOT NULL\r\n    AND OrganizationId IS NULL\r\n)\r\nOR\r\n(\r\n    RestaurantId IS NULL\r\n    AND OrganizationId IS NOT NULL\r\n)");
+                        });
                 });
 
             modelBuilder.Entity("SmartFood.Core.Entity.Organization", b =>
@@ -267,7 +270,10 @@ namespace SmartFood.Presentation.Migrations
 
                     b.HasIndex("RestaurantId");
 
-                    b.ToTable("VerificationDocuments");
+                    b.ToTable("VerificationDocuments", t =>
+                        {
+                            t.HasCheckConstraint("CK_VerificationDocument_Owner", "(\r\n    OrgnizationId IS NOT NULL\r\n    AND RestaurantId IS NULL\r\n)\r\nOR\r\n(\r\n    OrgnizationId IS NULL\r\n    AND RestaurantId IS NOT NULL\r\n)");
+                        });
                 });
 
             modelBuilder.Entity("SmartFood.Core.Entity.CodeOTP", b =>

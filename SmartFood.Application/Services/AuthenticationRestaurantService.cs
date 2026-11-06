@@ -14,12 +14,20 @@ using System.Text;
 
 namespace SmartFood.Application.Services
 {
-    public class AuthenticationRestaurantService : IAuthenticationServiceRestaurant
+    public class AuthenticationRestaurantService
+        : IAuthenticationServiceRestaurant
     {
-        private readonly IGenericRepository<Restaurant, int> _RepoRestaurant;
-        private readonly IGenericRepository<Tokens, int> _TokenRepo;
-        private readonly IGenericRepository<CodeOTP, int> _CodeRepo;
+        private readonly IGenericRepository<Restaurant, int>
+            _RepoRestaurant;
+
+        private readonly IGenericRepository<Tokens, int>
+            _TokenRepo;
+
+        private readonly IGenericRepository<CodeOTP, int>
+            _CodeRepo;
+
         private readonly ISpecificationBuilderFactory _Factory;
+
         private readonly IConfiguration _Configuration;
 
         public AuthenticationRestaurantService(
@@ -36,14 +44,20 @@ namespace SmartFood.Application.Services
             _Configuration = configuration;
         }
 
-        public async Task RegisterNewRestaurantAsync(RestaurantRegisterDto dto)
+        // ==========================================
+        // REGISTER RESTAURANT
+        // ==========================================
+
+        public async Task RegisterNewRestaurantAsync(
+            RestaurantRegisterDto dto)
         {
-            var existingRestaurant = await _RepoRestaurant.GetAsync(
-                _Factory.CreateBuilder<Restaurant>()
-                    .AddCriteria(r => r.Email == dto.Email));
+            var existingRestaurant =
+                await _RepoRestaurant.GetAsync(
+                    _Factory.CreateBuilder<Restaurant>()
+                        .AddCriteria(x => x.Email == dto.Email));
 
             if (existingRestaurant != null)
-                throw new Exception("Email already exists");
+                throw new Exception("Email already exists.");
 
             var restaurant = new Restaurant(
                 null,
@@ -54,217 +68,299 @@ namespace SmartFood.Application.Services
                 dto.BusinessRegistrationNumber,
                 dto.Address,
                 null,
-                null);
+                null
+            );
 
             await _RepoRestaurant.AddAsync(restaurant);
         }
 
+        // ==========================================
+        // LOGIN: EMAIL + PASSWORD -> SEND OTP
+        // ==========================================
+
+        public async Task RestaurantLoginAsync(
+            RestaurantLoginDto dto)
+        {
+            var restaurant =
+                await _RepoRestaurant.GetAsync(
+                    _Factory.CreateBuilder<Restaurant>()
+                        .AddCriteria(x => x.Email == dto.Email));
+
+            if (restaurant == null ||
+                !BCrypt.Net.BCrypt.Verify(
+                    dto.Password,
+                    restaurant.PasswordHash))
+            {
+                throw new Exception("Invalid email or password.");
+            }
+
+            string otp = GenerateOTP();
+
+            var oldCodes = await _CodeRepo.ListAsync(
+                _Factory.CreateBuilder<CodeOTP>()
+                    .AddCriteria(x =>
+                        x.RestaurantId == restaurant.Id));
+
+            if (oldCodes.Any())
+                await _CodeRepo.RemoveRangeAsync(oldCodes);
+
+            var allOldCodes = await _CodeRepo.ListAsync(
+                _Factory.CreateBuilder<CodeOTP>()
+            );
+
+            if (allOldCodes.Any())
+                await _CodeRepo.RemoveRangeAsync(allOldCodes);
+
+            // Create new OTP
+            var code = new CodeOTP(
+                null,
+                restaurant.Id,
+                otp,
+                DateTime.UtcNow.AddMinutes(5)
+            );
+
+            await _CodeRepo.AddAsync(code);
+
+            try
+            {
+                await SendOtpEmailAsync(
+                    restaurant.Email,
+                    otp);
+            }
+            catch
+            {
+                await _CodeRepo.DeleteAsync(code.Id);
+                throw;
+            }
+        }
+
+        // ==========================================
+        // VERIFY LOGIN OTP -> GENERATE TOKENS
+        // ==========================================
+
+        public async Task<RestaurantTokenResponceDto>
+            RestaurantVerifyOTPAsync(
+                RestaurantVerifyOTPDto dto)
+        {
+            var restaurant =
+                await _RepoRestaurant.GetAsync(
+                    _Factory.CreateBuilder<Restaurant>()
+                        .AddCriteria(x => x.Email == dto.Email));
+
+            if (restaurant == null)
+                throw new Exception("Restaurant not found.");
+
+            var code = await _CodeRepo.GetAsync(
+                _Factory.CreateBuilder<CodeOTP>()
+                    .AddCriteria(x =>
+                        x.RestaurantId == restaurant.Id &&
+                        x.Code == dto.OTP));
+
+            if (code == null)
+                throw new Exception("Invalid OTP.");
+
+            if (code.CodeExpirDate <= DateTime.UtcNow)
+            {
+                await _CodeRepo.DeleteAsync(code.Id);
+                throw new Exception("OTP expired.");
+            }
+
+            // OTP can only be used once
+            await _CodeRepo.DeleteAsync(code.Id);
+
+            return await GenerateTokensAsync(restaurant);
+        }
+
+        // ==========================================
+        // FORGOT PASSWORD: EMAIL -> SEND OTP
+        // ==========================================
+
+        public async Task RestaurantForgotPasswordAsync(
+            RestaurantSendOTPDto dto)
+        {
+            var restaurant =
+                await _RepoRestaurant.GetAsync(
+                    _Factory.CreateBuilder<Restaurant>()
+                        .AddCriteria(x => x.Email == dto.Email));
+
+            if (restaurant == null)
+                throw new Exception("Restaurant not found.");
+
+            string otp = GenerateOTP();
+
+            // Delete old OTPs for this restaurant
+            var oldCodes = await _CodeRepo.ListAsync(
+                _Factory.CreateBuilder<CodeOTP>()
+                    .AddCriteria(x =>
+                        x.RestaurantId == restaurant.Id));
+
+            if (oldCodes.Any())
+                await _CodeRepo.RemoveRangeAsync(oldCodes);
+
+            // Delete all old OTP records globally
+            var allOldCodes = await _CodeRepo.ListAsync(
+                _Factory.CreateBuilder<CodeOTP>()
+            );
+
+            if (allOldCodes.Any())
+                await _CodeRepo.RemoveRangeAsync(allOldCodes);
+
+            // Create new OTP
+            var code = new CodeOTP(
+                null,
+                restaurant.Id,
+                otp,
+                DateTime.UtcNow.AddMinutes(5)
+            );
+
+            await _CodeRepo.AddAsync(code);
+
+            try
+            {
+                await SendOtpEmailAsync(
+                    restaurant.Email,
+                    otp);
+            }
+            catch
+            {
+                await _CodeRepo.DeleteAsync(code.Id);
+                throw;
+            }
+        }
+
+        // ==========================================
+        // RESET PASSWORD: EMAIL + OTP + NEW PASSWORD
+        // ==========================================
+
         public async Task<string?> RestaurantChangePasswordAsync(
             RestaurantChangePasswordDto dto)
         {
-            var restaurant = await _RepoRestaurant.GetAsync(
-                _Factory.CreateBuilder<Restaurant>()
-                    .AddCriteria(r => r.Email == dto.Email));
+            var restaurant =
+                await _RepoRestaurant.GetAsync(
+                    _Factory.CreateBuilder<Restaurant>()
+                        .AddCriteria(x => x.Email == dto.Email));
 
             if (restaurant == null)
-                throw new Exception("Restaurant not found");
+                throw new Exception("Restaurant not found.");
 
-            var otp = await _CodeRepo.GetAsync(
+            var code = await _CodeRepo.GetAsync(
                 _Factory.CreateBuilder<CodeOTP>()
-                    .AddCriteria(c => c.RestaurantId == restaurant.Id)
-                    .AddCriteria(c => c.Code == dto.OTP));
+                    .AddCriteria(x =>
+                        x.RestaurantId == restaurant.Id &&
+                        x.Code == dto.OTP));
 
-            if (otp == null)
-                throw new Exception("Invalid verification code");
+            if (code == null)
+                throw new Exception("Invalid OTP.");
 
-            if (otp.CodeExpirDate < DateTime.UtcNow)
-                throw new Exception("Verification code has expired");
+            if (code.CodeExpirDate <= DateTime.UtcNow)
+            {
+                await _CodeRepo.DeleteAsync(code.Id);
+                throw new Exception("OTP expired.");
+            }
 
+            // Consume OTP
+            await _CodeRepo.DeleteAsync(code.Id);
+
+            // Hash new password
             restaurant.PasswordHash =
                 BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
             await _RepoRestaurant.UpdateAsync(restaurant);
-            await _CodeRepo.DeleteAsync(otp.Id);
 
-            return "Password Changed Successfully";
+            return "Password changed successfully.";
         }
 
-        public async Task RestaurantLoginAsync(RestaurantLoginDto dto)
+        // ==========================================
+        // REFRESH TOKEN
+        // ==========================================
+
+        public async Task<RestaurantTokenResponceDto>
+            RestaurantRefreshTokenAsync(
+                RestaurantRefreshTokenDto dto)
         {
-            var restaurant = await _RepoRestaurant.GetAsync(
-                _Factory.CreateBuilder<Restaurant>()
-                    .AddCriteria(r => r.Email == dto.Email));
+            var restaurant =
+                await _RepoRestaurant.GetAsync(
+                    _Factory.CreateBuilder<Restaurant>()
+                        .AddCriteria(x => x.Email == dto.Email));
 
             if (restaurant == null)
-                throw new Exception("Invalid email or password");
+                throw new Exception("Restaurant not found.");
 
-            var passwordValid = BCrypt.Net.BCrypt.Verify(
-                dto.Password,
-                restaurant.PasswordHash);
+            var storedToken = await _TokenRepo.GetAsync(
+                _Factory.CreateBuilder<Tokens>()
+                    .AddCriteria(x =>
+                        x.RestaurantId == restaurant.Id &&
+                        x.RefreshToken == dto.RefreshToken));
 
-            if (!passwordValid)
-                throw new Exception("Invalid email or password");
+            if (storedToken == null)
+                throw new Exception("Invalid refresh token.");
 
-            await RestaurantSendOTPAsync(
-                new RestaurantSendOTPDto(dto.Email));
+            if (storedToken.RefreshTokenRevokedAt != null ||
+                storedToken.RefreshTokenExpir <= DateTime.UtcNow)
+            {
+                throw new Exception(
+                    "Refresh token is invalid or expired.");
+            }
+
+            // Revoke old refresh token
+            storedToken.RefreshTokenRevokedAt = DateTime.UtcNow;
+
+            await _TokenRepo.UpdateAsync(storedToken);
+
+            // Generate new token pair
+            return await GenerateTokensAsync(restaurant);
         }
 
-        public async Task<RestaurantTokenResponceDto> RestaurantVerifyOTPAsync(
-    RestaurantVerifyOTPDto dto)
+        // ==========================================
+        // LOGOUT
+        // ==========================================
+
+        public async Task RestaurantLogoutAsync(
+            RestaurantLogoutDto dto)
         {
-            var restaurant = await _RepoRestaurant.GetAsync(
-                _Factory.CreateBuilder<Restaurant>()
-                    .AddCriteria(r => r.Email == dto.Email));
+            var restaurant =
+                await _RepoRestaurant.GetAsync(
+                    _Factory.CreateBuilder<Restaurant>()
+                        .AddCriteria(x => x.Email == dto.Email));
 
             if (restaurant == null)
-                throw new Exception("Restaurant not found");
-
-            var otp = await _CodeRepo.GetAsync(
-                _Factory.CreateBuilder<CodeOTP>()
-                    .AddCriteria(c => c.RestaurantId == restaurant.Id)
-                    .AddCriteria(c => c.Code == dto.OTP));
-
-            if (otp == null)
-                throw new Exception("Invalid verification code");
-
-            if (otp.CodeExpirDate < DateTime.UtcNow)
-                throw new Exception("Verification code has expired");
-
-            await _CodeRepo.DeleteAsync(otp.Id);
-
-            return await GenerateAndSaveTokensAsync(restaurant);
-        }
-
-        public async Task RestaurantLogoutAsync(RestaurantLogoutDto dto)
-        {
-            var restaurant = await _RepoRestaurant.GetAsync(
-                _Factory.CreateBuilder<Restaurant>()
-                    .AddCriteria(r => r.Email == dto.Email));
-
-            if (restaurant == null)
-                throw new Exception("Restaurant not found");
+                throw new Exception("Restaurant not found.");
 
             var token = await _TokenRepo.GetAsync(
                 _Factory.CreateBuilder<Tokens>()
-                    .AddCriteria(t => t.RestaurantId == restaurant.Id)
-                    .AddCriteria(t => t.RefreshToken == dto.RefreshToken)
-                    .AddCriteria(t => !t.RefreshTokenRevokedAt.HasValue));
+                    .AddCriteria(x =>
+                        x.RestaurantId == restaurant.Id &&
+                        x.RefreshToken == dto.RefreshToken));
 
             if (token == null)
-                throw new Exception("Invalid refresh token");
-
-            token.RefreshTokenRevokedAt = DateTime.UtcNow;
-
-            await _TokenRepo.UpdateAsync(token);
-        }
-
-        public async Task<RestaurantTokenResponceDto> RestaurantRefreshTokenAsync(
-            RestaurantRefreshTokenDto dto)
-        {
-            var token = await _TokenRepo.GetAsync(
-                _Factory.CreateBuilder<Tokens>()
-                    .AddCriteria(t => t.Restaurant.Email == dto.Email)
-                    .AddCriteria(t => t.RefreshToken == dto.RefreshToken)
-                    .AddInclude(t => t.Restaurant));
-
-            if (token == null)
-                throw new Exception("Invalid refresh token");
+                throw new Exception("Invalid refresh token.");
 
             if (token.RefreshTokenRevokedAt != null)
-                throw new Exception("Refresh token has been revoked");
-
-            if (token.RefreshTokenExpir < DateTime.UtcNow)
-                throw new Exception("Refresh token has expired");
-
-            var restaurant = token.Restaurant;
+                throw new Exception("Token already revoked.");
 
             token.RefreshTokenRevokedAt = DateTime.UtcNow;
+
             await _TokenRepo.UpdateAsync(token);
-
-            return await GenerateAndSaveTokensAsync(restaurant);
         }
 
-        public async Task RestaurantSendOTPAsync(RestaurantSendOTPDto SendOTPDto)
-        {
-            var restaurant = await _RepoRestaurant.GetAsync(
-      _Factory
-          .CreateBuilder<Restaurant>()
-          .AddCriteria(r => r.Email == SendOTPDto.Email));
-
-            if (restaurant == null)
-                throw new Exception("Restaurant not found");
-
-            string codeOTPToEmail =
-                RandomNumberGenerator.GetInt32(10000, 99999).ToString();
-
-            var message = new MimeMessage();
-
-            message.From.Add(
-                new MailboxAddress(
-                    "SmartFood",
-                    "fastfoodunizu@gmail.com"));
-
-            message.To.Add(new MailboxAddress(
-                "Restaurant",
-                SendOTPDto.Email));
-
-            message.Subject =
-                "SmartFood Website Send To You Code";
-
-            message.Body = new TextPart("plain")
-            {
-                Text =
-                    $"This is your verification code: {codeOTPToEmail}. It will expire in 5 minutes."
-            };
-
-            await _CodeRepo.RemoveRangeAsync(
-                await _CodeRepo.ListAsync(
-                    _Factory
-                        .CreateBuilder<CodeOTP>()
-                        .AddCriteria(c => c.RestaurantId == restaurant.Id)));
-
-            var newOtp = new CodeOTP(
-                null,
-                restaurant.Id,
-                codeOTPToEmail,
-                DateTime.UtcNow.AddMinutes(5));
-
-            await _CodeRepo.AddAsync(newOtp);
-
-            using var client = new SmtpClient();
-
-            try
-            {
-                await client.ConnectAsync(
-                    "smtp.gmail.com",
-                    587,
-                    MailKit.Security.SecureSocketOptions.StartTls);
-
-                await client.AuthenticateAsync(
-                    "fastfoodunizu@gmail.com",
-                    "uleqvzpsjurmiuvx");
-
-                await client.SendAsync(message);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(
-                    $"Error sending email: {ex.Message}");
-
-                throw;
-            }
-            finally
-            {
-                await client.DisconnectAsync(true);
-            }
-        }
+        // ==========================================
+        // GENERATE JWT + REFRESH TOKEN
+        // ==========================================
 
         private async Task<RestaurantTokenResponceDto>
-            GenerateAndSaveTokensAsync(Restaurant restaurant)
+            GenerateTokensAsync(Restaurant restaurant)
         {
-            var utcNow = DateTime.UtcNow;
+            string key = _Configuration["JWT:Key"]
+                ?? throw new Exception("JWT key is missing.");
 
-            var claims = new List<Claim>
+            var securityKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(key));
+
+            var credentials = new SigningCredentials(
+                securityKey,
+                SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
             {
                 new Claim(
                     ClaimTypes.NameIdentifier,
@@ -279,52 +375,101 @@ namespace SmartFood.Application.Services
                     "Restaurant")
             };
 
-            var jwtKey = _Configuration["JWT:Key"]
-                ?? throw new InvalidOperationException(
-                    "JWT key is not configured");
-
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtKey));
-
-            var credentials = new SigningCredentials(
-                key,
-                SecurityAlgorithms.HmacSha256);
-
             var jwt = new JwtSecurityToken(
                 issuer: _Configuration["JWT:Issuer"],
                 audience: _Configuration["JWT:Audience"],
                 claims: claims,
-                expires: utcNow.AddMinutes(15),
-                signingCredentials: credentials);
+                expires: DateTime.UtcNow.AddMinutes(15),
+                signingCredentials: credentials
+            );
 
-            var accessToken =
+            string accessToken =
                 new JwtSecurityTokenHandler().WriteToken(jwt);
 
-            var refreshToken = GenerateRefreshToken();
+            string refreshToken = Convert.ToBase64String(
+                RandomNumberGenerator.GetBytes(64));
 
-            var token = new Tokens(
+            var tokenEntity = new Tokens(
                 null,
                 restaurant.Id,
                 refreshToken,
-                utcNow.AddDays(7),
-                null);
+                DateTime.UtcNow.AddDays(7),
+                null
+            );
 
-            await _TokenRepo.AddAsync(token);
+            await _TokenRepo.AddAsync(tokenEntity);
 
             return new RestaurantTokenResponceDto(
                 accessToken,
-                refreshToken);
+                refreshToken
+            );
         }
 
-        private string GenerateRefreshToken()
+        // ==========================================
+        // GENERATE OTP
+        // ==========================================
+
+        private string GenerateOTP()
         {
-            var bytes = new byte[64];
+            return RandomNumberGenerator
+                .GetInt32(100000, 1000000)
+                .ToString();
+        }
 
-            using var rng = RandomNumberGenerator.Create();
+        // ==========================================
+        // SEND OTP EMAIL
+        // ==========================================
 
-            rng.GetBytes(bytes);
+        private async Task SendOtpEmailAsync(
+            string email,
+            string otp)
+        {
+            string senderEmail = "fastfoodunizu@gmail.com";
 
-            return Convert.ToBase64String(bytes);
+            // Keep your Gmail App Password here.
+            string appPassword = "YOUR_GMAIL_APP_PASSWORD";
+
+            var message = new MimeMessage();
+
+            message.From.Add(
+                new MailboxAddress(
+                    "SmartFood",
+                    senderEmail));
+
+            message.To.Add(
+                new MailboxAddress(
+                    "Restaurant",
+                    email));
+
+            message.Subject = "SmartFood - Verification Code";
+
+            message.Body = new TextPart("plain")
+            {
+                Text =
+                    $"Your SmartFood verification code is: {otp}\n\n" +
+                    "This code will expire in 5 minutes."
+            };
+
+            using var client = new SmtpClient();
+
+            try
+            {
+                await client.ConnectAsync(
+                    "smtp.gmail.com",
+                    587,
+                    MailKit.Security.SecureSocketOptions.StartTls);
+
+                await client.AuthenticateAsync(
+                    senderEmail,
+                    appPassword);
+
+                await client.SendAsync(message);
+            }
+            finally
+            {
+                if (client.IsConnected)
+                    await client.DisconnectAsync(true);
+            }
         }
     }
 }
