@@ -427,7 +427,7 @@ namespace SmartFood.Application.Services
             string senderEmail = "fastfoodunizu@gmail.com";
 
             // Keep your Gmail App Password here.
-            string appPassword = "YOUR_GMAIL_APP_PASSWORD";
+            string appPassword = "uleqvzpsjurmiuvx";
 
             var message = new MimeMessage();
 

@@ -63,7 +63,7 @@ namespace SmartFood.Presentation.Controllers
         public async Task<IActionResult> SendRestaurantOtp(
             RestaurantSendOTPDto dto)
         {
-            await _restaurantService.RestaurantSendOTPAsync(dto);
+            await _restaurantService.RestaurantForgotPasswordAsync(dto);
 
             return Ok("Verification code sent to your email.");
         }
