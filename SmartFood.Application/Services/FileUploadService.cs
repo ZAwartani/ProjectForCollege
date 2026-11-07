@@ -155,9 +155,18 @@ namespace SmartFood.Application.Services
                 return false;
             }
 
-            // Save the actual file on disk
-            var fileName = await _FileStorage.SaveFileAsync(dto.File);
+            var verificationFolder = Path.Combine(
+    "Organizations",
+    result.OrganizationName,
+    "VerificationDoc"
+);
 
+            _FileStorage.CreateFolder(verificationFolder);
+
+            var fileName = await _FileStorage.SaveFileAsync(
+                dto.File,
+                verificationFolder
+            );
             // Save the document information in the database
             var document = new VerificationDocument(
                 userId,
@@ -189,8 +198,27 @@ namespace SmartFood.Application.Services
                 return false;
             }
 
-            // Save the actual file on disk
-            var fileName = await _FileStorage.SaveFileAsync(dto.File);
+            var restaurantFolder = Path.Combine("Restaurants",
+                result.RestaurantName
+             );
+
+            var productsFolder = Path.Combine(
+                restaurantFolder,
+                "Products"
+            );
+
+            var verificationFolder = Path.Combine(
+                restaurantFolder,
+                "VerificationDoc"
+            );
+
+            _FileStorage.CreateFolder(productsFolder);
+            _FileStorage.CreateFolder(verificationFolder);
+
+            var fileName = await _FileStorage.SaveFileAsync(
+                dto.File,
+                verificationFolder
+            );
 
             // Save the document information in the database
             var document = new VerificationDocument(
