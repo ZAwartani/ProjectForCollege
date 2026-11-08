@@ -1,4 +1,5 @@
-﻿using SmartFood.Core.Enums;
+﻿using SmartFood.Core.Entity;
+using SmartFood.Core.Enums;
 using System.Security.Cryptography.X509Certificates;
 
 namespace SmartFood.Application.DTOs
@@ -14,12 +15,12 @@ namespace SmartFood.Application.DTOs
 
     public record ReturnOrganizationDto(
         int Id,
-        int VerificationId,
         string OrganizationName,
         string OwnerName,
         string RegisterNumber,
         string Address,
-        RegisterStatus Status
+        RegisterStatus Status,
+        VerificationDocumentDto? VerificationDocument
     );
 
     public record OrganizationLoginDto(

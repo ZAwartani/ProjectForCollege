@@ -90,10 +90,11 @@ namespace SmartFood.Application.Services
         // ==========================================
 
         public async Task<IReadOnlyList<ReturnOrganizationDto>>
-            OrganizationDetail()
+    OrganizationDetail()
         {
             var specification = _Factory.CreateBuilder<Organization>()
-                .AddCriteria(x => x.Status == RegisterStatus.Pending);
+                .AddCriteria(x => x.Status == RegisterStatus.Pending)
+                .AddInclude(x => x.VerificationDocument);
 
             var organizations =
                 await _RepoOrganization.ListAsync(specification);
@@ -101,12 +102,17 @@ namespace SmartFood.Application.Services
             return organizations.Select(x =>
                 new ReturnOrganizationDto(
                     x.Id,
-                    x.VerificationId ?? 0,
                     x.OrganizationName,
                     x.OwnerName,
                     x.RegistrationNumber,
                     x.Address,
-                    x.Status
+                    x.Status,
+                    x.VerificationDocument == null
+                        ? null
+                        : new VerificationDocumentDto(
+                            x.VerificationDocument.Id,
+                            x.VerificationDocument.FilePath
+                        )
                 )).ToList();
         }
 
@@ -126,12 +132,15 @@ namespace SmartFood.Application.Services
             return restaurants.Select(x =>
                 new ReturnRestaurantDto(
                     x.Id,
-                    x.VerificationId ?? 0,
                     x.RestaurantName,
                     x.OwnerName,
                     x.BusinessRegistrationNumber,
                     x.Address,
-                    x.Status
+                    x.Status,
+                    x.VerificationDocument == null ? null : new VerificationDocumentDto(
+                        x.VerificationDocument.Id,
+                        x.VerificationDocument.FilePath
+                    )
                 )).ToList();
         }
 
