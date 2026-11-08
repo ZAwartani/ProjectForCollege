@@ -22,6 +22,39 @@ namespace SmartFood.Presentation.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("SmartFood.Core.Entity.Admin", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("Admins");
+                });
+
             modelBuilder.Entity("SmartFood.Core.Entity.CodeOTP", b =>
                 {
                     b.Property<int>("Id")
@@ -218,6 +251,9 @@ namespace SmartFood.Presentation.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AdminId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -238,6 +274,8 @@ namespace SmartFood.Presentation.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AdminId");
 
                     b.HasIndex("OrganizationId");
 
@@ -274,6 +312,17 @@ namespace SmartFood.Presentation.Migrations
                         {
                             t.HasCheckConstraint("CK_VerificationDocument_Owner", "(\r\n    OrgnizationId IS NOT NULL\r\n    AND RestaurantId IS NULL\r\n)\r\nOR\r\n(\r\n    OrgnizationId IS NULL\r\n    AND RestaurantId IS NOT NULL\r\n)");
                         });
+                });
+
+            modelBuilder.Entity("SmartFood.Core.Entity.Admin", b =>
+                {
+                    b.HasOne("SmartFood.Core.Entity.Role", "Role")
+                        .WithMany("Admins")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("SmartFood.Core.Entity.CodeOTP", b =>
@@ -331,6 +380,10 @@ namespace SmartFood.Presentation.Migrations
 
             modelBuilder.Entity("SmartFood.Core.Entity.Tokens", b =>
                 {
+                    b.HasOne("SmartFood.Core.Entity.Admin", "Admin")
+                        .WithMany("Tokens")
+                        .HasForeignKey("AdminId");
+
                     b.HasOne("SmartFood.Core.Entity.Organization", "Organization")
                         .WithMany("Tokens")
                         .HasForeignKey("OrganizationId")
@@ -339,6 +392,8 @@ namespace SmartFood.Presentation.Migrations
                     b.HasOne("SmartFood.Core.Entity.Restaurant", "Restaurant")
                         .WithMany("Tokens")
                         .HasForeignKey("RestaurantId");
+
+                    b.Navigation("Admin");
 
                     b.Navigation("Organization");
 
@@ -362,6 +417,11 @@ namespace SmartFood.Presentation.Migrations
                     b.Navigation("Restaurant");
                 });
 
+            modelBuilder.Entity("SmartFood.Core.Entity.Admin", b =>
+                {
+                    b.Navigation("Tokens");
+                });
+
             modelBuilder.Entity("SmartFood.Core.Entity.Organization", b =>
                 {
                     b.Navigation("CodeOTPs");
@@ -378,6 +438,8 @@ namespace SmartFood.Presentation.Migrations
 
             modelBuilder.Entity("SmartFood.Core.Entity.Role", b =>
                 {
+                    b.Navigation("Admins");
+
                     b.Navigation("Organizations");
 
                     b.Navigation("Restaurants");

@@ -8,5 +8,7 @@ namespace SmartFood.Application.Interfaces
         Task<string> SaveFileAsync(IFormFile File, string relativeFolder);
         Task<IReadOnlyList<string>> ListFilesAsync();
         Task<bool> DeleteFileAsync(string FileName);
+        Task DeleteFolderOrg(string FolderName);
+        Task DeleteFolderRes(string FolderName);
     }
 }

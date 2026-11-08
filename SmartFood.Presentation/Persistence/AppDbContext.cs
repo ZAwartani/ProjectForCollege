@@ -18,6 +18,7 @@ namespace SmartFood.Presentation.Persistence
         public DbSet<VerificationDocument> VerificationDocuments { get; set; }
         public DbSet<CodeOTP> CodeOTPs { get; set; }
         public DbSet<Tokens> Tokens { get; set; }
+        public DbSet<Admin> Admins { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -55,6 +56,10 @@ namespace SmartFood.Presentation.Persistence
             // =========================
 
             modelBuilder.Entity<Restaurant>()
+                .HasIndex(r => r.Email)
+                .IsUnique();
+
+            modelBuilder.Entity<Admin>()
                 .HasIndex(r => r.Email)
                 .IsUnique();
 

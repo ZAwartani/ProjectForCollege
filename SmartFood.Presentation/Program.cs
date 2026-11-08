@@ -68,6 +68,11 @@ namespace SmartFood.Presentation
                 FileUploadService
             >();
 
+            builder.Services.AddScoped<
+                IAdminService,
+                AdminService
+            >();
+
             // ============================
             // Database
             // ============================

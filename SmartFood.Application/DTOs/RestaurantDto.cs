@@ -1,4 +1,6 @@
-﻿namespace SmartFood.Application.DTOs
+﻿using SmartFood.Core.Enums;
+
+namespace SmartFood.Application.DTOs
 {
     public record RestaurantRegisterDto(
             string Email,
@@ -7,6 +9,16 @@
             string OwnerName,
             string BusinessRegistrationNumber,
             string Address
+    );
+
+    public record ReturnRestaurantDto(
+            int Id,
+            int VerificationId,
+            string RestaurantName,
+            string OwnerName,
+            string RegisterNumber,
+            string Address,
+            RegisterStatus Status
     );
 
     public record RestaurantLoginDto(
