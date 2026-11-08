@@ -391,7 +391,8 @@ namespace SmartFood.Presentation.Migrations
 
                     b.HasOne("SmartFood.Core.Entity.Restaurant", "Restaurant")
                         .WithMany("Tokens")
-                        .HasForeignKey("RestaurantId");
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Admin");
 

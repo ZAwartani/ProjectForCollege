@@ -30,6 +30,7 @@ namespace SmartFood.Application.Services
             IGenericRepository<Admin, int> repoAdmin,
             IGenericRepository<Tokens, int> tokenRepo,
             ISpecificationBuilderFactory factory,
+            IFileStorageService fileStorageService,
             IConfiguration configuration)
         {
             _RepoOrganization = repoOrganization;
@@ -38,6 +39,7 @@ namespace SmartFood.Application.Services
             _TokenRepo = tokenRepo;
             _Factory = factory;
             _Configuration = configuration;
+            _FileUpload = fileStorageService;
         }
 
         // ==========================================
@@ -124,7 +126,8 @@ namespace SmartFood.Application.Services
             RestaurantDetail()
         {
             var specification = _Factory.CreateBuilder<Restaurant>()
-                .AddCriteria(x => x.Status == RegisterStatus.Pending);
+                .AddCriteria(x => x.Status == RegisterStatus.Pending)
+                .AddInclude(x => x.VerificationDocument);
 
             var restaurants =
                 await _RepoRestaurant.ListAsync(specification);

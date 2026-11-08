@@ -78,6 +78,13 @@ namespace SmartFood.Presentation.Persistence
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Tokens>()
+                .HasOne(t => t.Restaurant)
+                .WithMany(o => o.Tokens)
+                .HasForeignKey(t => t.RestaurantId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
+
             // =========================
             // OTP RELATIONSHIPS
             // =========================

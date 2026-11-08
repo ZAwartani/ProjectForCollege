@@ -459,10 +459,26 @@ namespace SmartFood.Application.Services
 
             try
             {
+                var host = _Configuration["Smtp:Host"]
+                    ?? throw new InvalidOperationException("SMTP host is missing.");
+
+                var port = _Configuration.GetValue<int>("Smtp:Port");
+
+                var security = Enum.Parse<MailKit.Security.SecureSocketOptions>(
+                    _Configuration["Smtp:Security"]
+                        ?? throw new InvalidOperationException(
+                            "SMTP security is missing."
+                        )
+                );
+
+                using var connectionTimeout =
+                    new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
                 await client.ConnectAsync(
-                    "smtp.gmail.com",
-                    587,
-                    MailKit.Security.SecureSocketOptions.StartTls);
+                    host,
+                    port,
+                    security,
+                    connectionTimeout.Token);
 
                 await client.AuthenticateAsync(
                     senderEmail,
