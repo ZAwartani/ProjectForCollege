@@ -104,7 +104,7 @@ namespace SmartFood.Application.Services
             if (oldCodes.Any())
                 await _CodeRepo.RemoveRangeAsync(oldCodes);
 
-            
+
             // Create new OTP
             var code = new CodeOTP(
                 null,
@@ -190,14 +190,6 @@ namespace SmartFood.Application.Services
 
             if (oldCodes.Any())
                 await _CodeRepo.RemoveRangeAsync(oldCodes);
-
-            // Delete all old OTP records globally
-            var allOldCodes = await _CodeRepo.ListAsync(
-                _Factory.CreateBuilder<CodeOTP>()
-            );
-
-            if (allOldCodes.Any())
-                await _CodeRepo.RemoveRangeAsync(allOldCodes);
 
             // Create new OTP
             var code = new CodeOTP(

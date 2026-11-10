@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SmartFood.Application.DTOs;
 using SmartFood.Application.Interfaces;
-using SmartFood.Core.Entity;
-using static SmartFood.Application.Interfaces.IRestaurantService;
 
 namespace SmartFood.Presentation.Controllers
 {
@@ -21,16 +18,22 @@ namespace SmartFood.Presentation.Controllers
 
         [HttpPost("CreateProduct")]
         [Authorize(Policy = "Approved")]
-
         public async Task<IActionResult> CreateProduct(
-            [FromForm] CreateProducrDto dto)
+    [FromForm] CreateProducrDto dto)
         {
-            var result = await _RestaurantService.CreateProduct(dto);
+            try
+            {
+                var result = await _RestaurantService.CreateProduct(dto);
 
-            if (!result)
-                return BadRequest("Failed to create product.");
+                if (!result)
+                    return NotFound("Restaurant not found.");
 
-            return Ok("Product created successfully.");
+                return Ok("Product created successfully.");
+            }
+            catch (ArgumentException exception)
+            {
+                return BadRequest(exception.Message);
+            }
         }
 
         [HttpGet("GetProduct")]
@@ -44,34 +47,35 @@ namespace SmartFood.Presentation.Controllers
 
         [HttpPut("UpdateProduct/{Id:int}")]
         [Authorize(Policy = "Approved")]
-
-        public async Task<IActionResult> UpdateProduct([FromForm]UpdateProductDto dto ,int Id)
+        public async Task<IActionResult> UpdateProduct(
+    [FromForm] UpdateProductDto dto,
+    [FromRoute] int Id)
         {
-            var result = await _RestaurantService.UpdateProduct(dto , Id);
-            if (!result)
+            try
             {
-                return BadRequest();
+                var result = await _RestaurantService.UpdateProduct(dto, Id);
+
+                if (!result)
+                    return NotFound("Product not found.");
+
+                return Ok("Product updated successfully.");
             }
-            else
+            catch (ArgumentException exception)
             {
-                return Ok("Product Update Successfully.");
+                return BadRequest(exception.Message);
             }
         }
 
         [HttpDelete("DeleteProduct/{Id:int}")]
         [Authorize(Policy = "Approved")]
-
-        public async Task<IActionResult> DeleteProduct(int Id)
+        public async Task<IActionResult> DeleteProduct([FromRoute] int Id)
         {
             var result = await _RestaurantService.RemoveProduct(Id);
+
             if (!result)
-            {
-                return BadRequest("Something Wrong");
-            }
-            else
-            {
-                return Ok();
-            }
+                return NotFound("Product not found.");
+
+            return Ok("Product and its photo deleted successfully.");
         }
 
         // 5. View profile and approval status
@@ -111,7 +115,7 @@ namespace SmartFood.Presentation.Controllers
             UpdateRestaurantLocationDto dto)
         {
             var result = await _RestaurantService.UpdateMyLocation(dto);
-            
+
             if (!result)
                 return BadRequest("Invalid location or restaurant not found.");
 

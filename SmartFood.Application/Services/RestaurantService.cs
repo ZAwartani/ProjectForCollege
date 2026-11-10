@@ -3,10 +3,6 @@ using SmartFood.Application.Interfaces;
 using SmartFood.Application.Interfaces.Factory;
 using SmartFood.Application.Interfaces.Specification;
 using SmartFood.Core.Entity;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using static SmartFood.Application.Interfaces.IRestaurantService;
 
 namespace SmartFood.Application.Services
 {
@@ -18,7 +14,7 @@ namespace SmartFood.Application.Services
         private readonly IFileStorageService _SaveFile;
         private readonly ICurrentUser _CurrentUser;
         public RestaurantService(
-            IGenericRepository<Product, int> repoProduct, 
+            IGenericRepository<Product, int> repoProduct,
             IFileStorageService saveFile,
             IGenericRepository<Restaurant, int> _RepoRestaurant,
             ISpecificationBuilderFactory _Factory,
@@ -38,9 +34,16 @@ namespace SmartFood.Application.Services
             var restaurant = await _RepoRestaurant.GetByIdAsync(RestaurantId);
 
             if (restaurant == null)
-            {
                 return false;
-            }
+
+            // Validate quantity through the entity before uploading the photo.
+            var product = new Product(
+                RestaurantId,
+                dto.Name,
+                dto.Description,
+                dto.Quantity,
+                string.Empty
+            );
 
             var relativeFolder = Path.Combine(
                 "Restaurants",
@@ -48,29 +51,35 @@ namespace SmartFood.Application.Services
                 "Products"
             );
 
-            var PathPhoto = await _SaveFile.SaveFileAsync(
+            var photoPath = await _SaveFile.SaveFileAsync(
                 dto.Photo,
                 relativeFolder
             );
 
-            var Result = new Product(
-                RestaurantId,
-                dto.Name,
-                dto.Description,
-                dto.Quantity,
-                PathPhoto
-            );
+            product.PhotoPath = photoPath;
 
-            await _RepoProduct.AddAsync(Result);
+            try
+            {
+                await _RepoProduct.AddAsync(product);
+            }
+            catch
+            {
+                // Clean up the uploaded photo if the database save fails.
+                await _SaveFile.DeleteFileAsync(photoPath);
+                throw;
+            }
 
             return true;
         }
 
         public async Task<IReadOnlyList<GetProductDto>> ProductList()
         {
+            var cutoff = DateTime.UtcNow.AddDays(-1);
+
             var specification = _Factory.CreateBuilder<Product>()
-                .AddCriteria(p => p.RestaurantId == RestaurantId)
-                .AddCriteria(x => x.CreateDate >= DateTime.UtcNow.AddDays(-1));
+                .AddCriteria(p =>
+                    p.RestaurantId == RestaurantId &&
+                    p.CreateDate >= cutoff);
 
             var products = await _RepoProduct.ListAsync(specification);
             return products
@@ -87,17 +96,21 @@ namespace SmartFood.Application.Services
 
         public async Task<bool> UpdateProduct(UpdateProductDto dto, int Id)
         {
+            var cutoff = DateTime.UtcNow.AddDays(-1);
+
             var specification = _Factory.CreateBuilder<Product>()
-                .AddCriteria(x => x.RestaurantId == RestaurantId)
-                .AddCriteria(x => x.Id == Id)
-                .AddCriteria(x => x.CreateDate >= DateTime.UtcNow.AddDays(-1));
+                .AddCriteria(p =>
+                    p.RestaurantId == RestaurantId &&
+                    p.Id == Id &&
+                    p.CreateDate >= cutoff);
 
             var product = await _RepoProduct.GetAsync(specification);
-            
-            if(product == null)
-            {
+
+            if (product == null)
                 return false;
-            }
+
+            var oldPhotoPath = product.PhotoPath;
+            string? newPhotoPath = null;
 
             if (dto.Name != null)
                 product.Name = dto.Name;
@@ -108,7 +121,7 @@ namespace SmartFood.Application.Services
             if (dto.Quantity.HasValue)
                 product.Quantity = dto.Quantity.Value;
 
-            if (dto.Photo != null && dto.Photo.Length > 0)
+            if (dto.Photo != null)
             {
                 var restaurant = await _RepoRestaurant.GetByIdAsync(RestaurantId);
 
@@ -121,26 +134,46 @@ namespace SmartFood.Application.Services
                     "Products"
                 );
 
-                product.PhotoPath = await _SaveFile.SaveFileAsync(
+                newPhotoPath = await _SaveFile.SaveFileAsync(
                     dto.Photo,
                     relativeFolder
                 );
+
+                product.PhotoPath = newPhotoPath;
             }
 
-            await _RepoProduct.UpdateAsync(product);
+            try
+            {
+                await _RepoProduct.UpdateAsync(product);
+            }
+            catch
+            {
+                // Remove the new upload if the database update fails.
+                if (newPhotoPath != null)
+                    await _SaveFile.DeleteFileAsync(newPhotoPath);
+
+                throw;
+            }
+
+            // Delete the old photo only after saving the replacement path.
+            if (newPhotoPath != null)
+                await _SaveFile.DeleteFileAsync(oldPhotoPath);
+
             return true;
         }
 
-
         public async Task<bool> RemoveProduct(int Id)
         {
+            var cutoff = DateTime.UtcNow.AddDays(-1);
+
             var Specification = _Factory.CreateBuilder<Product>()
-                .AddCriteria(x => x.RestaurantId == RestaurantId)
-                .AddCriteria(x => x.Id == Id)
-                .AddCriteria(x => x.CreateDate >= DateTime.UtcNow.AddDays(-1));
+                .AddCriteria(p =>
+                    p.RestaurantId == RestaurantId &&
+                    p.Id == Id &&
+                    p.CreateDate >= cutoff);
 
             var Result = await _RepoProduct.GetAsync(Specification);
-            if(Result == null)
+            if (Result == null)
             {
                 return false;
             }
