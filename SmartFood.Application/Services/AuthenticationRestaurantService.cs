@@ -104,13 +104,7 @@ namespace SmartFood.Application.Services
             if (oldCodes.Any())
                 await _CodeRepo.RemoveRangeAsync(oldCodes);
 
-            var allOldCodes = await _CodeRepo.ListAsync(
-                _Factory.CreateBuilder<CodeOTP>()
-            );
-
-            if (allOldCodes.Any())
-                await _CodeRepo.RemoveRangeAsync(allOldCodes);
-
+            
             // Create new OTP
             var code = new CodeOTP(
                 null,

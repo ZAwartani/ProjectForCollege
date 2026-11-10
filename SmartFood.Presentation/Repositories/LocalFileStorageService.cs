@@ -65,12 +65,12 @@ namespace SmartFood.Presentation.Repositories
             string relativeFolder)
         {
             if (file == null || file.Length == 0)
-                throw new Exception("File is empty.");
+                throw new ArgumentException("File is empty.");
 
             const long maxFileSize = 2 * 1024 * 1024;
 
             if (file.Length > maxFileSize)
-                throw new Exception("File size must be 2 MB or less.");
+                throw new ArgumentException("File size must be 2 MB or less.");
 
             var folder = GetStoragePath(relativeFolder);
 

@@ -88,15 +88,21 @@ namespace SmartFood.Presentation.Controllers
 
 
         [HttpPut("UpdateMyProfile")]
-        public async Task<IActionResult> UpdateMyProfile(
-            UpdateRestaurantProfileDto dto)
+        public async Task<IActionResult> UpdateMyProfile(UpdateRestaurantProfileDto dto)
         {
-            var result = await _RestaurantService.UpdateMyProfile(dto);
+            try
+            {
+                var result = await _RestaurantService.UpdateMyProfile(dto);
 
-            if (!result)
-                return BadRequest("Failed to update profile.");
+                if (!result)
+                    return NotFound("Restaurant not found.");
 
-            return Ok("Profile updated successfully.");
+                return Ok("Profile updated successfully.");
+            }
+            catch (ArgumentException exception)
+            {
+                return BadRequest(exception.Message);
+            }
         }
 
 

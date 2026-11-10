@@ -39,9 +39,10 @@ namespace SmartFood.Application.Interfaces
 DONE
     
  5.View my profile and approval status
+DONE
     
  6.Update my profile
-
+DONE
  7.Set/update my location
-
+DONE
 */

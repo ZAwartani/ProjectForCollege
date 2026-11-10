@@ -110,15 +110,21 @@ namespace SmartFood.Application.Services
 
             if (dto.Photo != null && dto.Photo.Length > 0)
             {
-                var newPhotoPath = await _SaveFile.SaveFileAsync(
-                    dto.Photo,
-                    dto.Name
+                var restaurant = await _RepoRestaurant.GetByIdAsync(RestaurantId);
+
+                if (restaurant == null)
+                    return false;
+
+                var relativeFolder = Path.Combine(
+                    "Restaurants",
+                    restaurant.RestaurantName,
+                    "Products"
                 );
 
-                if (!string.IsNullOrEmpty(newPhotoPath))
-                {
-                    product.PhotoPath = newPhotoPath;
-                }
+                product.PhotoPath = await _SaveFile.SaveFileAsync(
+                    dto.Photo,
+                    relativeFolder
+                );
             }
 
             await _RepoProduct.UpdateAsync(product);
@@ -136,10 +142,11 @@ namespace SmartFood.Application.Services
             var Result = await _RepoProduct.GetAsync(Specification);
             if(Result == null)
             {
-                throw new Exception("We Don't Have This Product");
+                return false;
             }
-            await _SaveFile.DeleteFileAsync(Result.PhotoPath);
             await _RepoProduct.DeleteAsync(Result.Id);
+            await _SaveFile.DeleteFileAsync(Result.PhotoPath);
+
             return true;
         }
 
@@ -168,21 +175,27 @@ namespace SmartFood.Application.Services
         public async Task<bool> UpdateMyProfile(UpdateRestaurantProfileDto dto)
         {
             var specification = _Factory.CreateBuilder<Restaurant>()
-                .AddCriteria(x => x.Id == RestaurantId);
+                .AddCriteria(r => r.Id == RestaurantId);
 
             var restaurant = await _RepoRestaurant.GetAsync(specification);
 
             if (restaurant == null)
                 return false;
 
-            if (!string.IsNullOrWhiteSpace(dto.Name))
-                restaurant.RestaurantName = dto.Name;
+            if (!string.IsNullOrWhiteSpace(dto.Name) &&
+                dto.Name.Trim() != restaurant.RestaurantName)
+            {
+                throw new ArgumentException(
+                    "Restaurant name changes are temporarily unavailable " +
+                    "because uploaded files are stored under that name."
+                );
+            }
 
             if (!string.IsNullOrWhiteSpace(dto.OwnerName))
-                restaurant.OwnerName = dto.OwnerName;
+                restaurant.OwnerName = dto.OwnerName.Trim();
 
             if (!string.IsNullOrWhiteSpace(dto.Address))
-                restaurant.Address = dto.Address;
+                restaurant.Address = dto.Address.Trim();
 
             await _RepoRestaurant.UpdateAsync(restaurant);
 
