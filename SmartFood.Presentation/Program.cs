@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -26,6 +27,15 @@ namespace SmartFood.Presentation
             // ============================
             // Dependency Injection
             // ============================
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy("Approved", policy =>
+                {
+                    policy.Requirements.Add(new ApprovedRequirement());
+                });
+            });
+
+            builder.Services.AddScoped<IAuthorizationHandler, ApprovedHandler>();
 
             // Generic Repository
             builder.Services.AddScoped(
@@ -33,6 +43,10 @@ namespace SmartFood.Presentation
                 typeof(GenericRepository<,>)
             );
 
+            builder.Services.AddScoped<
+                IRestaurantService,
+                RestaurantService
+                >();
             // Current User
             builder.Services.AddHttpContextAccessor();
 

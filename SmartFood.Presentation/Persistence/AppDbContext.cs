@@ -19,6 +19,7 @@ namespace SmartFood.Presentation.Persistence
         public DbSet<CodeOTP> CodeOTPs { get; set; }
         public DbSet<Tokens> Tokens { get; set; }
         public DbSet<Admin> Admins { get; set; }
+        public DbSet<Product> Product { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -161,6 +162,9 @@ namespace SmartFood.Presentation.Persistence
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
 
+      
+
+
             // =========================
             // VERIFICATION DOCUMENT OWNERS
             // =========================
@@ -199,6 +203,17 @@ namespace SmartFood.Presentation.Persistence
 
             modelBuilder.Entity<VerificationDocument>()
                 .HasIndex(x => x.RestaurantId);
+
+            // ==========================================
+            //                  Product
+            // ==========================================
+
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.Restaurant)
+                .WithMany(r => r.Products)
+                .HasForeignKey(p => p.RestaurantId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

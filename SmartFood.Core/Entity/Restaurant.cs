@@ -28,6 +28,7 @@ namespace SmartFood.Core.Entity
         public DateTime CreatedAt { get; set; }
         public ICollection<Tokens> Tokens { get; set; }
         public ICollection<CodeOTP> CodeOTPs { get; set; }
+        public ICollection<Product> Products { get; set; }
 
         public Restaurant(
                 int? VerificationId,

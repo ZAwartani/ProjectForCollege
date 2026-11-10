@@ -150,6 +150,42 @@ namespace SmartFood.Presentation.Migrations
                     b.ToTable("Organizations");
                 });
 
+            modelBuilder.Entity("SmartFood.Core.Entity.Product", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhotoPath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.ToTable("Product");
+                });
+
             modelBuilder.Entity("SmartFood.Core.Entity.Restaurant", b =>
                 {
                     b.Property<int>("Id")
@@ -360,6 +396,17 @@ namespace SmartFood.Presentation.Migrations
                     b.Navigation("VerificationDocument");
                 });
 
+            modelBuilder.Entity("SmartFood.Core.Entity.Product", b =>
+                {
+                    b.HasOne("SmartFood.Core.Entity.Restaurant", "Restaurant")
+                        .WithMany("Products")
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Restaurant");
+                });
+
             modelBuilder.Entity("SmartFood.Core.Entity.Restaurant", b =>
                 {
                     b.HasOne("SmartFood.Core.Entity.Role", "Role")
@@ -433,6 +480,8 @@ namespace SmartFood.Presentation.Migrations
             modelBuilder.Entity("SmartFood.Core.Entity.Restaurant", b =>
                 {
                     b.Navigation("CodeOTPs");
+
+                    b.Navigation("Products");
 
                     b.Navigation("Tokens");
                 });
