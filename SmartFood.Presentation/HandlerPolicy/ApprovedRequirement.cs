@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 
-public class ApprovedRequirement : IAuthorizationRequirement
+public class RestaurantApprovedRequirement : IAuthorizationRequirement
 {
+}
 
+public class OrganizationApprovedRequirement : IAuthorizationRequirement
+{
 }

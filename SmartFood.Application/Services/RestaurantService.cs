@@ -36,7 +36,6 @@ namespace SmartFood.Application.Services
             if (restaurant == null)
                 return false;
 
-            // Validate quantity through the entity before uploading the photo.
             var product = new Product(
                 RestaurantId,
                 dto.Name,
@@ -64,7 +63,6 @@ namespace SmartFood.Application.Services
             }
             catch
             {
-                // Clean up the uploaded photo if the database save fails.
                 await _SaveFile.DeleteFileAsync(photoPath);
                 throw;
             }
@@ -148,14 +146,12 @@ namespace SmartFood.Application.Services
             }
             catch
             {
-                // Remove the new upload if the database update fails.
                 if (newPhotoPath != null)
                     await _SaveFile.DeleteFileAsync(newPhotoPath);
 
                 throw;
             }
 
-            // Delete the old photo only after saving the replacement path.
             if (newPhotoPath != null)
                 await _SaveFile.DeleteFileAsync(oldPhotoPath);
 
@@ -262,6 +258,5 @@ namespace SmartFood.Application.Services
 
             return true;
         }
-
     }
 }

@@ -29,13 +29,20 @@ namespace SmartFood.Presentation
             // ============================
             builder.Services.AddAuthorization(options =>
             {
-                options.AddPolicy("Approved", policy =>
+                options.AddPolicy("RestaurantApproved", policy =>
                 {
-                    policy.Requirements.Add(new ApprovedRequirement());
+                    policy.Requirements.Add(new RestaurantApprovedRequirement());
+                });
+
+                options.AddPolicy("OrganizationApproved", policy =>
+                {
+                    policy.Requirements.Add(new OrganizationApprovedRequirement());
                 });
             });
 
-            builder.Services.AddScoped<IAuthorizationHandler, ApprovedHandler>();
+            builder.Services.AddScoped<IAuthorizationHandler, ApprovedHandlerRestaurant>();
+            builder.Services.AddScoped<IAuthorizationHandler, OrganizationApprovedHandler>();
+
 
             // Generic Repository
             builder.Services.AddScoped(
@@ -63,6 +70,11 @@ namespace SmartFood.Presentation
                 IAuthenticationServiceRestaurant,
                 AuthenticationRestaurantService
             >();
+
+            builder.Services.AddScoped<
+                IOrganizationService,
+                OrganizationService
+                >();
 
             // Organization Authentication
             builder.Services.AddScoped<

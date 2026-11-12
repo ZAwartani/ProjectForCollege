@@ -17,7 +17,7 @@ namespace SmartFood.Presentation.Controllers
         }
 
         [HttpPost("CreateProduct")]
-        [Authorize(Policy = "Approved")]
+        [Authorize(Policy = "RestaurantApproved")]
         public async Task<IActionResult> CreateProduct(
     [FromForm] CreateProducrDto dto)
         {
@@ -37,7 +37,7 @@ namespace SmartFood.Presentation.Controllers
         }
 
         [HttpGet("GetProduct")]
-        [Authorize(Policy = "Approved")]
+        [Authorize(Policy = "RestaurantApproved")]
 
         public async Task<IActionResult> GetProduct()
         {
@@ -46,7 +46,7 @@ namespace SmartFood.Presentation.Controllers
         }
 
         [HttpPut("UpdateProduct/{Id:int}")]
-        [Authorize(Policy = "Approved")]
+        [Authorize(Policy = "RestaurantApproved")]
         public async Task<IActionResult> UpdateProduct(
     [FromForm] UpdateProductDto dto,
     [FromRoute] int Id)
@@ -67,7 +67,7 @@ namespace SmartFood.Presentation.Controllers
         }
 
         [HttpDelete("DeleteProduct/{Id:int}")]
-        [Authorize(Policy = "Approved")]
+        [Authorize(Policy = "RestaurantApproved")]
         public async Task<IActionResult> DeleteProduct([FromRoute] int Id)
         {
             var result = await _RestaurantService.RemoveProduct(Id);

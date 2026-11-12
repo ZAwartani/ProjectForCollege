@@ -17,17 +17,10 @@ namespace SmartFood.Application.Services
     public class AuthenticationRestaurantService
         : IAuthenticationServiceRestaurant
     {
-        private readonly IGenericRepository<Restaurant, int>
-            _RepoRestaurant;
-
-        private readonly IGenericRepository<Tokens, int>
-            _TokenRepo;
-
-        private readonly IGenericRepository<CodeOTP, int>
-            _CodeRepo;
-
+        private readonly IGenericRepository<Restaurant, int> _RepoRestaurant;
+        private readonly IGenericRepository<Tokens, int> _TokenRepo;
+        private readonly IGenericRepository<CodeOTP, int>_CodeRepo;
         private readonly ISpecificationBuilderFactory _Factory;
-
         private readonly IConfiguration _Configuration;
 
         public AuthenticationRestaurantService(
@@ -105,7 +98,6 @@ namespace SmartFood.Application.Services
                 await _CodeRepo.RemoveRangeAsync(oldCodes);
 
 
-            // Create new OTP
             var code = new CodeOTP(
                 null,
                 restaurant.Id,
@@ -159,7 +151,6 @@ namespace SmartFood.Application.Services
                 throw new Exception("OTP expired.");
             }
 
-            // OTP can only be used once
             await _CodeRepo.DeleteAsync(code.Id);
 
             return await GenerateTokensAsync(restaurant);
@@ -182,7 +173,6 @@ namespace SmartFood.Application.Services
 
             string otp = GenerateOTP();
 
-            // Delete old OTPs for this restaurant
             var oldCodes = await _CodeRepo.ListAsync(
                 _Factory.CreateBuilder<CodeOTP>()
                     .AddCriteria(x =>
@@ -191,7 +181,6 @@ namespace SmartFood.Application.Services
             if (oldCodes.Any())
                 await _CodeRepo.RemoveRangeAsync(oldCodes);
 
-            // Create new OTP
             var code = new CodeOTP(
                 null,
                 restaurant.Id,

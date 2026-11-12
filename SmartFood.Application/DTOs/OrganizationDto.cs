@@ -57,4 +57,59 @@ namespace SmartFood.Application.DTOs
         string Email,
         string RefreshToken
     );
+    public record OrganizationProfileDto(
+        int Id,
+        string OrganizationName,
+        string OwnerName,
+        string Email,
+        string RegistrationNumber,
+        string Address,
+        double? Latitude,
+        double? Longitude,
+        RegisterStatus Status
+    );
+
+    public record UpdateOrganizationProfileDto(
+        string? OwnerName,
+        string? Address
+    );
+    public record UpdateOrganizationLocationDto(
+        double Latitude,
+        double Longitude
+     );
+
+    public class OrganizationQueryProductDto
+    {
+        public string? Search { get; set; }
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+    }
+
+    public record OrganizationProductDto(
+       int Id,
+       int RestaurantId,
+       string RestaurantName,
+       string Name,
+       string Description,
+       int Quantity,
+       string PhotoPath,
+       DateTime CreateDate
+    );
+
+    public record OrganizationRestaurantDto(
+        int Id,
+        string RestaurantName,
+        string Address,
+        double? Latitude,
+        double? Longitude
+    );
+
+    public record OrganizationRestaurantDetailsDto(
+        int Id,
+        string RestaurantName,
+        string Address,
+        double? Latitude,
+        double? Longitude,
+        IReadOnlyList<OrganizationProductDto> Products
+    );
 }

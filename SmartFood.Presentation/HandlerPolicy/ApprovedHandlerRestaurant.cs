@@ -7,17 +7,17 @@ using SmartFood.Core.Enums;
 using SmartFood.Presentation.Persistence;
 using System.Security.Claims;
 
-public class ApprovedHandler : AuthorizationHandler<ApprovedRequirement>
+public class ApprovedHandlerRestaurant : AuthorizationHandler<RestaurantApprovedRequirement>
 {
     private readonly IGenericRepository<Restaurant, int> _context;
     private readonly ISpecificationBuilderFactory specificationBuilderFactory;
 
     private readonly ICurrentUser currentUser;
-    public ApprovedHandler()
+    public ApprovedHandlerRestaurant()
     {
     }
 
-    public ApprovedHandler(IGenericRepository<Restaurant, int> context, ISpecificationBuilderFactory specificationBuilderFactory, ICurrentUser currentUser)
+    public ApprovedHandlerRestaurant(IGenericRepository<Restaurant, int> context, ISpecificationBuilderFactory specificationBuilderFactory, ICurrentUser currentUser)
     {
         _context = context;
         this.specificationBuilderFactory = specificationBuilderFactory;
@@ -27,7 +27,7 @@ public class ApprovedHandler : AuthorizationHandler<ApprovedRequirement>
     private int Id => currentUser.Id;
     protected override async Task HandleRequirementAsync(
     AuthorizationHandlerContext context,
-    ApprovedRequirement requirement)
+    RestaurantApprovedRequirement requirement)
     {
         var idClaim = context.User.FindFirst(ClaimTypes.NameIdentifier);
 
