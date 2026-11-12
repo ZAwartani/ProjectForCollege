@@ -1,6 +1,4 @@
-﻿using SmartFood.Core.Entity;
-using SmartFood.Core.Enums;
-using System.Security.Cryptography.X509Certificates;
+﻿using SmartFood.Core.Enums;
 
 namespace SmartFood.Application.DTOs
 {
@@ -58,21 +56,24 @@ namespace SmartFood.Application.DTOs
         string RefreshToken
     );
     public record OrganizationProfileDto(
-        int Id,
-        string OrganizationName,
-        string OwnerName,
-        string Email,
-        string RegistrationNumber,
-        string Address,
-        double? Latitude,
-        double? Longitude,
-        RegisterStatus Status
-    );
+    int Id,
+    string OrganizationName,
+    string OwnerName,
+    string Email,
+    string RegistrationNumber,
+    string Address,
+    double? Latitude,
+    double? Longitude,
+    RegisterStatus Status,
+    string? PhoneNumber
+);
 
     public record UpdateOrganizationProfileDto(
-        string? OwnerName,
-        string? Address
-    );
+    string? OwnerName,
+    string? Address,
+    string? PhoneNumber
+);
+
     public record UpdateOrganizationLocationDto(
         double Latitude,
         double Longitude
@@ -97,19 +98,19 @@ namespace SmartFood.Application.DTOs
     );
 
     public record OrganizationRestaurantDto(
-        int Id,
-        string RestaurantName,
-        string Address,
-        double? Latitude,
-        double? Longitude
-    );
+    int Id,
+    string RestaurantName,
+    string Address,
+    double Latitude,
+    double Longitude
+);
 
     public record OrganizationRestaurantDetailsDto(
-        int Id,
-        string RestaurantName,
-        string Address,
-        double? Latitude,
-        double? Longitude,
-        IReadOnlyList<OrganizationProductDto> Products
-    );
+      int Id,
+      string RestaurantName,
+      string Address,
+      double Latitude,
+      double Longitude,
+      IReadOnlyList<OrganizationProductDto> Products
+  );
 }

@@ -4,10 +4,6 @@ using SmartFood.Application.Interfaces.Factory;
 using SmartFood.Application.Interfaces.Specification;
 using SmartFood.Core.Entity;
 using SmartFood.Core.Enums;
-using System;
-using System.Collections.Generic;
-using System.Reflection.Metadata;
-using System.Text;
 
 namespace SmartFood.Application.Services
 {
@@ -21,10 +17,10 @@ namespace SmartFood.Application.Services
         private readonly IGenericRepository<Product, int> _RepoProduct;
 
         public OrganizationService(
-            IGenericRepository<Organization, int> repoOrganization, 
-            IGenericRepository<Restaurant, int> repoRestaurant, 
-            ISpecificationBuilderFactory factory, 
-            ICurrentUser currentUser, 
+            IGenericRepository<Organization, int> repoOrganization,
+            IGenericRepository<Restaurant, int> repoRestaurant,
+            ISpecificationBuilderFactory factory,
+            ICurrentUser currentUser,
             IFileStorageService fileUploader,
             IGenericRepository<Product, int> repoProduct)
         {
@@ -35,27 +31,30 @@ namespace SmartFood.Application.Services
             _FileUploader = fileUploader;
             _RepoProduct = repoProduct;
         }
+
         private int IdOrganization => _CurrentUser.Id;
+
         public async Task<OrganizationProfileDto?> GetMyProfileAsync()
         {
-            var Specification = _Factory.CreateBuilder<Organization>()
+            var specification = _Factory.CreateBuilder<Organization>()
                 .AddCriteria(x => x.Id == IdOrganization);
 
-            var ResultSpecification = await _RepoOrganization.GetAsync(Specification);
-            if (ResultSpecification == null)
-            {
+            var organization = await _RepoOrganization.GetAsync(specification);
+
+            if (organization == null)
                 return null;
-            }
+
             return new OrganizationProfileDto(
-                    ResultSpecification.Id,
-                    ResultSpecification.OrganizationName,
-                    ResultSpecification.OwnerName,
-                    ResultSpecification.Email,
-                    ResultSpecification.RegistrationNumber,
-                    ResultSpecification.Address,
-                    ResultSpecification.Latitude,
-                    ResultSpecification.Longitude,
-                    ResultSpecification.Status
+                organization.Id,
+                organization.OrganizationName,
+                organization.OwnerName,
+                organization.Email,
+                organization.RegistrationNumber,
+                organization.Address,
+                organization.Latitude,
+                organization.Longitude,
+                organization.Status,
+                organization.PhoneNumber
             );
         }
 
@@ -89,16 +88,25 @@ namespace SmartFood.Application.Services
             );
         }
 
-        public async Task<IReadOnlyList<OrganizationProductDto>> GetProductsAsync(OrganizationQueryProductDto query)
+        public async Task<IReadOnlyList<OrganizationProductDto>> GetProductsAsync(
+      OrganizationQueryProductDto query)
         {
             if (query.PageNumber < 1)
-                throw new ArgumentException("Page number must be at least 1.");
-
-            if (query.PageSize < 1  || query.PageSize > 100)
             {
                 throw new ArgumentException(
-                    "Page size must be between 1 and 100."
-                );
+                    "Page number must be at least 1.");
+            }
+
+            if (query.PageSize < 1 || query.PageSize > 100)
+            {
+                throw new ArgumentException(
+                    "Page size must be between 1 and 100.");
+            }
+
+            if ((long)(query.PageNumber - 1) * query.PageSize > int.MaxValue)
+            {
+                throw new ArgumentException(
+                    "Page number is too large.");
             }
 
             var search = query.Search?.Trim();
@@ -129,114 +137,162 @@ namespace SmartFood.Application.Services
             )).ToList();
         }
 
-        public async Task<OrganizationRestaurantDetailsDto?> GetRestaurantAsync(int id)
+        public async Task<OrganizationRestaurantDetailsDto?> GetRestaurantAsync(
+            int id)
         {
-            var SpeicificationRestaurant = _Factory.CreateBuilder<Restaurant>()
-                .AddCriteria(x => x.Id == id && x.Status == RegisterStatus.Approved);
-         
-            var ResultRestaurant = await _RepoRestaurant.GetAsync(SpeicificationRestaurant);
-            if(ResultRestaurant == null)
-            {
-                return null;
-            }
-            var CutOff = DateTime.UtcNow.AddDays(-1);
-            var SpeificationProduct = _Factory.CreateBuilder<Product>()
-                .AddCriteria(x => x.RestaurantId == ResultRestaurant.Id &&
-                                  x.Quantity > 0 &&
-                                  x.CreateDate > CutOff);
+            var specification = _Factory.CreateBuilder<Restaurant>()
+                .AddCriteria(r =>
+                    r.Id == id &&
+                    r.Status == RegisterStatus.Approved &&
+                    r.Latitude.HasValue &&
+                    r.Longitude.HasValue);
 
-            var ResultProduct = await _RepoProduct.ListAsync(SpeificationProduct);
+            var restaurant = await _RepoRestaurant.GetAsync(specification);
 
-            if(ResultRestaurant == null)
-            {
+            if (restaurant == null)
                 return null;
-            }
-            var ReturnDataProduct = ResultProduct.Select(x => new OrganizationProductDto(
-                    x.Id,
-                    x.RestaurantId,
-                    ResultRestaurant.RestaurantName,
-                    x.Name,
-                    x.Description,
-                    x.Quantity,
-                    x.PhotoPath,
-                    x.CreateDate
-                )).ToList();
-                
-            var ResultRequest = new OrganizationRestaurantDetailsDto(
-                    ResultRestaurant.Id,
-                    ResultRestaurant.RestaurantName,
-                    ResultRestaurant.Address,
-                    ResultRestaurant.Latitude,
-                    ResultRestaurant.Longitude,
-                    ReturnDataProduct
+
+            var cutoff = DateTime.UtcNow.AddDays(-1);
+
+            var productSpecification = _Factory.CreateBuilder<Product>()
+                .AddCriteria(p =>
+                    p.RestaurantId == restaurant.Id &&
+                    p.Quantity > 0 &&
+                    p.CreateDate >= cutoff)
+                .ApplyOrderBy(p => p.Id);
+
+            var products = await _RepoProduct.ListAsync(productSpecification);
+
+            var productDtos = products.Select(p => new OrganizationProductDto(
+                p.Id,
+                p.RestaurantId,
+                restaurant.RestaurantName,
+                p.Name,
+                p.Description,
+                p.Quantity,
+                p.PhotoPath,
+                p.CreateDate
+            )).ToList();
+
+            return new OrganizationRestaurantDetailsDto(
+                restaurant.Id,
+                restaurant.RestaurantName,
+                restaurant.Address,
+                restaurant.Latitude.Value,
+                restaurant.Longitude.Value,
+                productDtos
             );
-            return ResultRequest;
         }
 
         public async Task<IReadOnlyList<OrganizationRestaurantDto>> GetRestaurantsAsync()
         {
-            var Specification = _Factory.CreateBuilder<Restaurant>()
-                .AddCriteria(x => x.Status == RegisterStatus.Approved);
+            var specification = _Factory.CreateBuilder<Restaurant>()
+                .AddCriteria(r =>
+                    r.Status == RegisterStatus.Approved &&
+                    r.Latitude.HasValue &&
+                    r.Longitude.HasValue)
+                .ApplyOrderBy(r => r.Id);
 
-            var result = await _RepoRestaurant.ListAsync(Specification);
-            
-            return result.Select(x => new OrganizationRestaurantDto
-            (
-                x.Id,
-                x.RestaurantName,
-                x.Address,
-                x.Latitude,
-                x.Longitude
+            var restaurants = await _RepoRestaurant.ListAsync(specification);
+
+            return restaurants.Select(r => new OrganizationRestaurantDto(
+                r.Id,
+                r.RestaurantName,
+                r.Address,
+                r.Latitude.Value,
+                r.Longitude.Value
             )).ToList();
         }
 
-        public async Task<bool> UpdateMyLocationAsync(UpdateOrganizationLocationDto dto)
+        public async Task<bool> UpdateMyLocationAsync(
+            UpdateOrganizationLocationDto dto)
         {
-            var Specification = _Factory.CreateBuilder<Organization>()
-                .AddCriteria(x => x.Id == IdOrganization);
-
-            var ResultSpecification = await _RepoOrganization.GetAsync(Specification);
-            
-            if (ResultSpecification == null)
+            if (!double.IsFinite(dto.Latitude) ||
+                dto.Latitude < -90 ||
+                dto.Latitude > 90)
             {
-                return false;
+                throw new ArgumentException(
+                    "Latitude must be between -90 and 90.");
             }
 
-            ResultSpecification.Longitude = dto.Longitude;
-            ResultSpecification.Latitude = dto.Latitude;
+            if (!double.IsFinite(dto.Longitude) ||
+                dto.Longitude < -180 ||
+                dto.Longitude > 180)
+            {
+                throw new ArgumentException(
+                    "Longitude must be between -180 and 180.");
+            }
 
-            await _RepoOrganization.UpdateAsync(ResultSpecification);
+            var specification = _Factory.CreateBuilder<Organization>()
+                .AddCriteria(x => x.Id == IdOrganization);
+
+            var organization = await _RepoOrganization.GetAsync(specification);
+
+            if (organization == null)
+                return false;
+
+            organization.Latitude = dto.Latitude;
+            organization.Longitude = dto.Longitude;
+
+            await _RepoOrganization.UpdateAsync(organization);
+
             return true;
         }
 
-        public async Task<bool> UpdateMyProfileAsync(UpdateOrganizationProfileDto dto)
+        public async Task<bool> UpdateMyProfileAsync(
+    UpdateOrganizationProfileDto dto)
         {
-            var Specification = _Factory.CreateBuilder<Organization>()
+            if (dto.OwnerName != null &&
+                string.IsNullOrWhiteSpace(dto.OwnerName))
+            {
+                throw new ArgumentException("Owner name cannot be empty.");
+            }
+
+            if (dto.Address != null &&
+                string.IsNullOrWhiteSpace(dto.Address))
+            {
+                throw new ArgumentException("Address cannot be empty.");
+            }
+
+            string? phoneNumber = null;
+
+            if (dto.PhoneNumber != null)
+            {
+                phoneNumber = dto.PhoneNumber.Trim();
+
+                var digits = phoneNumber.StartsWith("+")
+                    ? phoneNumber.Substring(1)
+                    : phoneNumber;
+
+                if (digits.Length < 7 ||
+                    digits.Length > 15 ||
+                    digits.Any(c => c < '0' || c > '9'))
+                {
+                    throw new ArgumentException(
+                        "Phone number must contain 7 to 15 digits, " +
+                        "with an optional leading +.");
+                }
+            }
+
+            var specification = _Factory.CreateBuilder<Organization>()
                 .AddCriteria(x => x.Id == IdOrganization);
 
-            var ResultSpecification = await _RepoOrganization.GetAsync(Specification);
+            var organization = await _RepoOrganization.GetAsync(specification);
 
-            if(ResultSpecification == null)
-            {
+            if (organization == null)
                 return false;
-            }
-            if (dto.OwnerName != null)
-            {
-                if (string.IsNullOrWhiteSpace(dto.OwnerName))
-                    throw new ArgumentException("Owner name cannot be empty.");
 
-                ResultSpecification.OwnerName = dto.OwnerName.Trim();
-            }
+            if (dto.OwnerName != null)
+                organization.OwnerName = dto.OwnerName.Trim();
 
             if (dto.Address != null)
-            {
-                if (string.IsNullOrWhiteSpace(dto.Address))
-                    throw new ArgumentException("Address cannot be empty.");
+                organization.Address = dto.Address.Trim();
 
-                ResultSpecification.Address = dto.Address.Trim();
-            }
+            if (phoneNumber != null)
+                organization.PhoneNumber = phoneNumber;
 
-            await _RepoOrganization.UpdateAsync(ResultSpecification);
+            await _RepoOrganization.UpdateAsync(organization);
+
             return true;
         }
     }
