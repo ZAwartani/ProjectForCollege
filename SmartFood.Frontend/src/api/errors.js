@@ -50,6 +50,7 @@ export function getErrorMessage(error, t) {
   if (!error.response) return t('errors.network')
 
   const { status, data } = error.response
+  if (data?.code === 'BACKEND_UNAVAILABLE') return t('errors.network')
   const serverMessage = extractServerMessage(data)
 
   if (serverMessage && KNOWN_MESSAGES[serverMessage]) {

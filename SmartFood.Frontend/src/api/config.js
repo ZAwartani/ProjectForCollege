@@ -1,8 +1,9 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+import { resolveBackendOrigin } from './backendAddress'
 
-if (!API_BASE_URL) {
-  console.error('VITE_API_BASE_URL is missing. Copy .env.example to .env and set it.')
-}
+export const BACKEND_ORIGIN = resolveBackendOrigin(import.meta.env.VITE_API_BASE_URL)
+
+// Vite forwards development requests to the backend. Built deployments use its address directly.
+export const API_BASE_URL = import.meta.env.DEV ? '' : BACKEND_ORIGIN
 
 export const DEFAULT_TIMEOUT_MS = 15000
 

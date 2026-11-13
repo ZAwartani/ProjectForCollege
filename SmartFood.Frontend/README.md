@@ -13,11 +13,19 @@ Open http://localhost:5173 (this port is fixed because the backend CORS only all
 
 ## Configuration
 
-Copy `.env.example` to `.env` and set the backend address:
+Start the ASP.NET backend first. The frontend defaults to its HTTPS profile at
+`https://localhost:7270`, including when `.env` is absent after cloning.
+To use another backend address, copy `.env.example` to `.env` and set:
 
 ```
-VITE_API_BASE_URL=http://localhost:5288
+VITE_API_BASE_URL=https://localhost:7270
 ```
+
+If running only the HTTP launch profile, use `http://localhost:5288`.
+Restart `npm run dev` after changing `.env`. During development Vite forwards
+`/api`, `/Restaurants`, and `/Organizations` to that backend. Local HTTPS
+development certificates are accepted by this development proxy. Production
+builds call the configured backend directly and require valid TLS and CORS settings.
 
 ## Structure
 
@@ -54,8 +62,8 @@ and use `t('section.key')` from `useLanguage()`.
   empty and the user sees a generic server error until the backend returns proper 400/401 JSON.
 - Access token: kept in memory only. Refresh token + email + account type: `localStorage`
   (the backend refresh endpoint needs the email too).
-- Backend must run with the `http` profile (`http://localhost:5288`). With the `https` profile the backend
-  redirects http to https and the browser blocks the redirected CORS request.
+- Set the address to the active backend launch profile. With the HTTPS profile, use its HTTPS
+  address directly to avoid HTTP redirects during browser API requests.
 
 ## Admin notes
 
