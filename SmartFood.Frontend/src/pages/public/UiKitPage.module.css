@@ -1,0 +1,3 @@
+.section { margin-bottom: var(--space-8); }
+.row { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.form { max-width: 420px; }

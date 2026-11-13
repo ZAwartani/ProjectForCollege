@@ -1,0 +1,54 @@
+/* Design tokens: every color, size and spacing used in the app comes from here. */
+:root {
+  /* Brand */
+  --color-primary: #2f855a;
+  --color-primary-hover: #276749;
+  --color-primary-soft: #e6f4ec;
+  --color-accent: #dd6b20;
+
+  /* Neutrals */
+  --color-bg: #f7f8f5;
+  --color-surface: #ffffff;
+  --color-border: #dfe3dc;
+  --color-text: #1f2a24;
+  --color-text-muted: #5d6b63;
+
+  /* Feedback */
+  --color-success: #2f855a;
+  --color-success-soft: #e6f4ec;
+  --color-error: #c53030;
+  --color-error-soft: #fdecec;
+  --color-warning: #b7791f;
+  --color-warning-soft: #fdf3dc;
+  --color-info: #2b6cb0;
+  --color-info-soft: #e6f0fb;
+
+  /* Typography */
+  --font-family: 'Cairo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.75rem;
+  --font-size-2xl: 2.25rem;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  /* Shape and depth */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(31, 42, 36, 0.08);
+  --shadow-md: 0 6px 18px rgba(31, 42, 36, 0.1);
+
+  /* Layout */
+  --container-width: 1120px;
+  --navbar-height: 64px;
+  --focus-ring: 0 0 0 3px rgba(47, 133, 90, 0.35);
+}

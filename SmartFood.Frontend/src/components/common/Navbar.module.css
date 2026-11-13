@@ -1,0 +1,78 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: var(--navbar-height);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  height: 100%;
+}
+
+.brand {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.brand:hover { text-decoration: none; }
+
+.links {
+  display: flex;
+  gap: var(--space-4);
+  margin-inline-end: auto;
+  margin-inline-start: var(--space-6);
+}
+
+.links a { color: var(--color-text-muted); font-weight: 600; }
+.links a:hover { color: var(--color-primary); text-decoration: none; }
+.active { color: var(--color-primary) !important; }
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.email {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.textLink { font-weight: 600; }
+
+.primaryLink {
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+
+.primaryLink:hover { background: var(--color-primary-hover); text-decoration: none; }
+
+@media (max-width: 640px) {
+  .email { display: none; }
+  .links { margin-inline-start: 0; }
+  .inner { gap: var(--space-2); }
+  .actions { gap: var(--space-2); }
+  .brand { font-size: var(--font-size-md); }
+  .primaryLink { padding-inline: var(--space-2); }
+  /* The brand already links to the home page; this keeps the bar inside narrow phone screens. */
+  .homeLink { display: none; }
+}
+
+@media (max-width: 380px) {
+  .links { gap: var(--space-2); }
+  .links a { font-size: var(--font-size-sm); }
+}
