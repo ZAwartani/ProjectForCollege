@@ -20,6 +20,8 @@ namespace SmartFood.Presentation.Persistence
         public DbSet<Tokens> Tokens { get; set; }
         public DbSet<Admin> Admins { get; set; }
         public DbSet<Product> Product { get; set; }
+        public DbSet<Carts> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -214,6 +216,34 @@ namespace SmartFood.Presentation.Persistence
                 .HasForeignKey(p => p.RestaurantId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Carts>()
+                .HasOne(c => c.Organization)
+                .WithOne()
+                .HasForeignKey<Carts>(c => c.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CartItem>()
+                .HasOne(ci => ci.Carts)
+                .WithMany(c => c.CartItems)
+                .HasForeignKey(ci => ci.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CartItem>()
+                .HasOne(ci => ci.Product)
+                .WithMany()
+                .HasForeignKey(ci => ci.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CartItem>()
+                .HasIndex(ci => new { ci.CartId, ci.ProductId })
+                .IsUnique();
+
+            modelBuilder.Entity<CartItem>()
+                .ToTable("CartItems", table =>
+                    table.HasCheckConstraint(
+                        "CK_CartItems_Quantity_Positive",
+                        "[Quantity] > 0"));
         }
     }
 }

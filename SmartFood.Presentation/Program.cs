@@ -99,6 +99,11 @@ namespace SmartFood.Presentation
                 AdminService
             >();
 
+            builder.Services.AddScoped<
+                    ICartService,
+                    CartService
+                >();
+
             // ============================
             // Database
             // ============================

@@ -55,6 +55,63 @@ namespace SmartFood.Presentation.Migrations
                     b.ToTable("Admins");
                 });
 
+            modelBuilder.Entity("SmartFood.Core.Entity.CartItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CartId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ProductId1")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("ProductId1");
+
+                    b.HasIndex("CartId", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("CartItems", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CartItems_Quantity_Positive", "[Quantity] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("SmartFood.Core.Entity.Carts", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OrganizationId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId")
+                        .IsUnique();
+
+                    b.ToTable("Carts");
+                });
+
             modelBuilder.Entity("SmartFood.Core.Entity.CodeOTP", b =>
                 {
                     b.Property<int>("Id")
@@ -100,6 +157,9 @@ namespace SmartFood.Presentation.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("CartId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -142,6 +202,10 @@ namespace SmartFood.Presentation.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CartId")
+                        .IsUnique()
+                        .HasFilter("[CartId] IS NOT NULL");
 
                     b.HasIndex("Email")
                         .IsUnique();
@@ -364,6 +428,40 @@ namespace SmartFood.Presentation.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("SmartFood.Core.Entity.CartItem", b =>
+                {
+                    b.HasOne("SmartFood.Core.Entity.Carts", "Carts")
+                        .WithMany("CartItems")
+                        .HasForeignKey("CartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartFood.Core.Entity.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartFood.Core.Entity.Product", null)
+                        .WithMany("CartItems")
+                        .HasForeignKey("ProductId1");
+
+                    b.Navigation("Carts");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("SmartFood.Core.Entity.Carts", b =>
+                {
+                    b.HasOne("SmartFood.Core.Entity.Organization", "Organization")
+                        .WithOne()
+                        .HasForeignKey("SmartFood.Core.Entity.Carts", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
             modelBuilder.Entity("SmartFood.Core.Entity.CodeOTP", b =>
                 {
                     b.HasOne("SmartFood.Core.Entity.Organization", "Organization")
@@ -383,6 +481,10 @@ namespace SmartFood.Presentation.Migrations
 
             modelBuilder.Entity("SmartFood.Core.Entity.Organization", b =>
                 {
+                    b.HasOne("SmartFood.Core.Entity.Carts", "Carts")
+                        .WithOne()
+                        .HasForeignKey("SmartFood.Core.Entity.Organization", "CartId");
+
                     b.HasOne("SmartFood.Core.Entity.Role", "Role")
                         .WithMany("Organizations")
                         .HasForeignKey("RoleId")
@@ -393,6 +495,8 @@ namespace SmartFood.Presentation.Migrations
                         .WithMany()
                         .HasForeignKey("VerificationId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Carts");
 
                     b.Navigation("Role");
 
@@ -473,11 +577,21 @@ namespace SmartFood.Presentation.Migrations
                     b.Navigation("Tokens");
                 });
 
+            modelBuilder.Entity("SmartFood.Core.Entity.Carts", b =>
+                {
+                    b.Navigation("CartItems");
+                });
+
             modelBuilder.Entity("SmartFood.Core.Entity.Organization", b =>
                 {
                     b.Navigation("CodeOTPs");
 
                     b.Navigation("Tokens");
+                });
+
+            modelBuilder.Entity("SmartFood.Core.Entity.Product", b =>
+                {
+                    b.Navigation("CartItems");
                 });
 
             modelBuilder.Entity("SmartFood.Core.Entity.Restaurant", b =>

@@ -18,8 +18,7 @@ namespace SmartFood.Presentation.Controllers
 
         [HttpPost("CreateProduct")]
         [Authorize(Policy = "RestaurantApproved")]
-        public async Task<IActionResult> CreateProduct(
-    [FromForm] CreateProducrDto dto)
+        public async Task<IActionResult> CreateProduct([FromForm] CreateProducrDto dto)
         {
             try
             {
@@ -47,9 +46,7 @@ namespace SmartFood.Presentation.Controllers
 
         [HttpPut("UpdateProduct/{Id:int}")]
         [Authorize(Policy = "RestaurantApproved")]
-        public async Task<IActionResult> UpdateProduct(
-    [FromForm] UpdateProductDto dto,
-    [FromRoute] int Id)
+        public async Task<IActionResult> UpdateProduct([FromForm] UpdateProductDto dto,[FromRoute] int Id)
         {
             try
             {
@@ -78,7 +75,6 @@ namespace SmartFood.Presentation.Controllers
             return Ok("Product and its photo deleted successfully.");
         }
 
-        // 5. View profile and approval status
         [HttpGet("MyProfile")]
         public async Task<IActionResult> GetMyProfile()
         {

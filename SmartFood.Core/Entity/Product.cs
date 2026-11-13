@@ -31,6 +31,7 @@ namespace SmartFood.Core.Entity
         }
         public DateTime CreateDate{ get; set; }
         public string PhotoPath { get; set; }
+        public ICollection<CartItem> CartItems { get; set; }
 
         public Product(
             int restaurantId,

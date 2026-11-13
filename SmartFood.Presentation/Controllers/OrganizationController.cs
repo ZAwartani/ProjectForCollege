@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using SmartFood.Application.DTOs;
 using SmartFood.Application.Interfaces;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace SmartFood.Presentation.Controllers
 {
