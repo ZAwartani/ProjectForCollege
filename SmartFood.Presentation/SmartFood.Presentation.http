@@ -1,0 +1,6 @@
+@SmartFood.Presentation_HostAddress = http://localhost:5288
+
+GET {{SmartFood.Presentation_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

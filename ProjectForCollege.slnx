@@ -1,1 +1,5 @@
-<Solution />
+<Solution>
+  <Project Path="SmartFood.Application/SmartFood.Application.csproj" />
+  <Project Path="SmartFood.Core/SmartFood.Core.csproj" />
+  <Project Path="SmartFood.Presentation/SmartFood.Presentation.csproj" />
+</Solution>
