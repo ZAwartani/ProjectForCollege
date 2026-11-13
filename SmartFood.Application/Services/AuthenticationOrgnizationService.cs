@@ -71,7 +71,6 @@ namespace SmartFood.Application.Services
                 dto.RegistrationNumber,
                 dto.Address,
                 null,
-                null,
                 null
             );
 

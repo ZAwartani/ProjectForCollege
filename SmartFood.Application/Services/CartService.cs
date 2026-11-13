@@ -16,10 +16,10 @@ namespace SmartFood.Application.Services
         private readonly ISpecificationBuilderFactory _Factory;
         private readonly ICurrentUser _CurrentUser;
 
-        public CartService(IGenericRepository<Product, int> repoProduct, 
-            IGenericRepository<Organization, int> repoOrganization, 
-            IGenericRepository<Carts, int> repoCarts, 
-            IGenericRepository<CartItem, int> repoCartItem, 
+        public CartService(IGenericRepository<Product, int> repoProduct,
+            IGenericRepository<Organization, int> repoOrganization,
+            IGenericRepository<Carts, int> repoCarts,
+            IGenericRepository<CartItem, int> repoCartItem,
             ISpecificationBuilderFactory factory,
             ICurrentUser currentUser)
         {
@@ -34,50 +34,23 @@ namespace SmartFood.Application.Services
 
         public async Task ClearMyCartAsync()
         {
-            var Specification = _Factory.CreateBuilder<Carts>()
-                .AddCriteria(x => x.OrganizationId == OrganizationId);
+            var organizationId = OrganizationId;
 
-            var Result = await _RepoCarts.ListAsync(Specification);
-            if(Result.Count == 0 )
-            {
+            var specification = _Factory.CreateBuilder<CartItem>()
+                .AddCriteria(item => item.Carts.OrganizationId == organizationId);
+
+            var items = await _RepoCartItem.ListAsync(specification);
+
+            if (items.Count == 0)
                 return;
-            }
-            await _RepoCarts.RemoveRangeAsync(Result);
+
+            await _RepoCartItem.RemoveRangeAsync(items);
         }
 
         public async Task<bool> RemoveItemAsync(int productId)
         {
             var Speicification = _Factory.CreateBuilder<Carts>()
                 .AddCriteria(x => x.OrganizationId == OrganizationId);
-
-            var ResultSpecificationOrgId = await _RepoCarts.GetAsync(Speicification);
-
-            if(ResultSpecificationOrgId == null)
-            {
-                return false;
-            }
-
-            var SpecificationCartItem = _Factory.CreateBuilder<CartItem>()
-                .AddCriteria(x => x.ProductId == productId 
-                               && x.CartId == ResultSpecificationOrgId.Id);
-
-            var ResultSpecificationCartItem = await _RepoCartItem.GetAsync(SpecificationCartItem);
-            if(ResultSpecificationCartItem == null)
-            {
-                return false;
-            }
-
-            await _RepoCartItem.DeleteAsync(ResultSpecificationCartItem.Id);
-            return true;
-        }
-        public async Task<bool> UpdateItemQuantityAsync(int productId, UpdateCartItemQuantityDto dto)
-        {
-            if(dto.Quantity < 1)
-            {
-                throw new ArgumentException("Quantity Must Be More Than One");
-            }
-            var Speicification = _Factory.CreateBuilder<Carts>()
-                 .AddCriteria(x => x.OrganizationId == OrganizationId);
 
             var ResultSpecificationOrgId = await _RepoCarts.GetAsync(Speicification);
 
@@ -88,29 +61,68 @@ namespace SmartFood.Application.Services
 
             var SpecificationCartItem = _Factory.CreateBuilder<CartItem>()
                 .AddCriteria(x => x.ProductId == productId
-                               && x.CartId == ResultSpecificationOrgId.Id)
-                .AddInclude(item => item.Product.Restaurant);
-                
+                               && x.CartId == ResultSpecificationOrgId.Id);
 
             var ResultSpecificationCartItem = await _RepoCartItem.GetAsync(SpecificationCartItem);
             if (ResultSpecificationCartItem == null)
             {
                 return false;
             }
-            if(ResultSpecificationCartItem.Quantity <= 0 
-                || ResultSpecificationCartItem.Product.CreateDate < DateTime.UtcNow.AddDays(-1)
-                || ResultSpecificationCartItem.Product.Restaurant.Status != RegisterStatus.Approved)
+
+            await _RepoCartItem.DeleteAsync(ResultSpecificationCartItem.Id);
+            return true;
+        }
+        public async Task<bool> UpdateItemQuantityAsync(
+     int productId,
+     UpdateCartItemQuantityDto dto)
+        {
+            if (dto.Quantity < 1)
             {
-                throw new ArgumentException("This Product is no longer available");
+                throw new ArgumentException("Quantity must be at least 1.");
             }
 
-            if(dto.Quantity > ResultSpecificationCartItem.Product.Quantity)
-            {
-                throw new ArgumentException("Quantity Not Enought");
-            }
-            ResultSpecificationCartItem.Quantity = dto.Quantity;
+            var organizationId = OrganizationId;
 
-            await _RepoCartItem.UpdateAsync(ResultSpecificationCartItem);
+            var cartSpecification = _Factory.CreateBuilder<Carts>()
+                .AddCriteria(cart => cart.OrganizationId == organizationId);
+
+            var cart = await _RepoCarts.GetAsync(cartSpecification);
+
+            if (cart == null)
+            {
+                return false;
+            }
+
+            var itemSpecification = _Factory.CreateBuilder<CartItem>()
+                .AddCriteria(item =>
+                    item.ProductId == productId &&
+                    item.CartId == cart.Id)
+                .AddInclude(item => item.Product.Restaurant);
+
+            var cartItem = await _RepoCartItem.GetAsync(itemSpecification);
+
+            if (cartItem == null)
+            {
+                return false;
+            }
+
+            if (cartItem.Product.Quantity <= 0 ||
+                cartItem.Product.CreateDate < DateTime.UtcNow.AddDays(-1) ||
+                cartItem.Product.Restaurant.Status != RegisterStatus.Approved)
+            {
+                throw new ArgumentException("This product is no longer available.");
+            }
+
+            if (dto.Quantity > cartItem.Product.Quantity)
+            {
+                throw new ArgumentException(
+                    "Requested quantity exceeds available stock.");
+            }
+
+            cartItem.Quantity = dto.Quantity;
+
+            await _RepoCartItem.UpdateAsync(cartItem);
+
             return true;
         }
         public async Task<bool> AddItemAsync(AddCartItemDto dto)

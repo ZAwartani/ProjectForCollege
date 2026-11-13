@@ -11,7 +11,7 @@ namespace SmartFood.Core.Entity
             int? verificationId,
             string organizationName, string email, string passwordHash,
             string ownerName, string registrationNumber, string address,
-            double? latitude, double? longitude , int? cartId
+            double? latitude, double? longitude
            )
         {
             VerificationId = verificationId;
@@ -26,7 +26,6 @@ namespace SmartFood.Core.Entity
             Status = RegisterStatus.Pending;
             CreatedAt = DateTime.UtcNow;
             RoleId = (int)UserType.Organization;
-            CartId = cartId;
         }
 
         [Key]
@@ -39,9 +38,8 @@ namespace SmartFood.Core.Entity
         [ForeignKey(nameof(VerificationDocument))]
         public int? VerificationId { get; set; }
         public VerificationDocument VerificationDocument { get; set; }
-        [ForeignKey(nameof(Carts))]
-        public int? CartId { get; set; }
-        public Carts Carts { get; set; }
+
+        public Carts? Carts { get; set; }
         public string OrganizationName { get; set; } = null!;
         public string Email { get; set; }
         public string? PhoneNumber { get; set; }

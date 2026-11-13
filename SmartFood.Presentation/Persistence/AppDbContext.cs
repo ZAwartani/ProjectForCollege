@@ -164,7 +164,7 @@ namespace SmartFood.Presentation.Persistence
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
 
-      
+
 
 
             // =========================
@@ -218,10 +218,10 @@ namespace SmartFood.Presentation.Persistence
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Carts>()
-                .HasOne(c => c.Organization)
-                .WithOne()
-                .HasForeignKey<Carts>(c => c.OrganizationId)
-                .OnDelete(DeleteBehavior.Cascade);
+            .HasOne(c => c.Organization)
+            .WithOne(o => o.Carts)
+            .HasForeignKey<Carts>(c => c.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<CartItem>()
                 .HasOne(ci => ci.Carts)
@@ -230,10 +230,10 @@ namespace SmartFood.Presentation.Persistence
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<CartItem>()
-                .HasOne(ci => ci.Product)
-                .WithMany()
-                .HasForeignKey(ci => ci.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
+            .HasOne(ci => ci.Product)
+            .WithMany(p => p.CartItems)
+            .HasForeignKey(ci => ci.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<CartItem>()
                 .HasIndex(ci => new { ci.CartId, ci.ProductId })

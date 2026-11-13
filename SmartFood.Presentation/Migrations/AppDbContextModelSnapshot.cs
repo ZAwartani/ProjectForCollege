@@ -69,17 +69,12 @@ namespace SmartFood.Presentation.Migrations
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ProductId1")
-                        .HasColumnType("int");
-
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId");
-
-                    b.HasIndex("ProductId1");
 
                     b.HasIndex("CartId", "ProductId")
                         .IsUnique();
@@ -157,9 +152,6 @@ namespace SmartFood.Presentation.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("CartId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -202,10 +194,6 @@ namespace SmartFood.Presentation.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CartId")
-                        .IsUnique()
-                        .HasFilter("[CartId] IS NOT NULL");
 
                     b.HasIndex("Email")
                         .IsUnique();
@@ -437,14 +425,10 @@ namespace SmartFood.Presentation.Migrations
                         .IsRequired();
 
                     b.HasOne("SmartFood.Core.Entity.Product", "Product")
-                        .WithMany()
+                        .WithMany("CartItems")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("SmartFood.Core.Entity.Product", null)
-                        .WithMany("CartItems")
-                        .HasForeignKey("ProductId1");
 
                     b.Navigation("Carts");
 
@@ -454,7 +438,7 @@ namespace SmartFood.Presentation.Migrations
             modelBuilder.Entity("SmartFood.Core.Entity.Carts", b =>
                 {
                     b.HasOne("SmartFood.Core.Entity.Organization", "Organization")
-                        .WithOne()
+                        .WithOne("Carts")
                         .HasForeignKey("SmartFood.Core.Entity.Carts", "OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -481,10 +465,6 @@ namespace SmartFood.Presentation.Migrations
 
             modelBuilder.Entity("SmartFood.Core.Entity.Organization", b =>
                 {
-                    b.HasOne("SmartFood.Core.Entity.Carts", "Carts")
-                        .WithOne()
-                        .HasForeignKey("SmartFood.Core.Entity.Organization", "CartId");
-
                     b.HasOne("SmartFood.Core.Entity.Role", "Role")
                         .WithMany("Organizations")
                         .HasForeignKey("RoleId")
@@ -495,8 +475,6 @@ namespace SmartFood.Presentation.Migrations
                         .WithMany()
                         .HasForeignKey("VerificationId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Carts");
 
                     b.Navigation("Role");
 
@@ -584,6 +562,8 @@ namespace SmartFood.Presentation.Migrations
 
             modelBuilder.Entity("SmartFood.Core.Entity.Organization", b =>
                 {
+                    b.Navigation("Carts");
+
                     b.Navigation("CodeOTPs");
 
                     b.Navigation("Tokens");

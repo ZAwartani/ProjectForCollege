@@ -1,9 +1,6 @@
 ﻿using SmartFood.Core.Interfaces;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
 namespace SmartFood.Core.Entity
 {
@@ -21,6 +18,6 @@ namespace SmartFood.Core.Entity
         public int OrganizationId { get; set; }
         public Organization Organization { get; set; }
         public DateTime CreateDate { get; set; }
-        public ICollection<CartItem> CartItems { get; set; }
+        public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
     }
 }
